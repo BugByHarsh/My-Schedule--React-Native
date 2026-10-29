@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { scheduleStartNotification, cancelScheduled } from './notifications';
@@ -30,14 +31,22 @@ function timeOnDate(dateKey, time) {
 
 export function useDailyNotifications(timetable, saveTimetable, ready = true) {
   const lastTimetableRef = useRef(null);
+  const [resumeCount, setResumeCount] = useState(0);
   const saveTimetableRef = useRef(saveTimetable);
   useEffect(() => { saveTimetableRef.current = saveTimetable; }, [saveTimetable]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setResumeCount((count) => count + 1);
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!ready || !timetable || typeof timetable !== 'object') return;
     const serialized = JSON.stringify(timetable);
-    if (lastTimetableRef.current === serialized) return;
-    lastTimetableRef.current = serialized;
+    const runKey = `${serialized}:${resumeCount}`;
+    if (lastTimetableRef.current === runKey) return;
+    lastTimetableRef.current = runKey;
 
     const run = async () => {
       const raw = await AsyncStorage.getItem(TIMETABLE_KEY);
@@ -110,5 +119,5 @@ export function useDailyNotifications(timetable, saveTimetable, ready = true) {
     notificationQueue = notificationQueue.then(run).catch((error) => {
       console.warn('useDailyNotifications error:', error);
     });
-  }, [timetable, ready]);
+  }, [timetable, ready, resumeCount]);
 }
