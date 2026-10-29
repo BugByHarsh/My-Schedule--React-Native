@@ -8,13 +8,13 @@ function getGreeting() {
   return 'Good evening 🌙';
 }
 
-export default function Header() {
+export default function Header({ home = false }) {
   const today = new Date();
   return (
     <View style={styles.header}>
       <View>
         <Text style={styles.greeting}>{getGreeting()}</Text>
-        <Text style={styles.title}>My Schedule</Text>
+        <Text style={[styles.title, home && styles.homeTitle]}>{home ? "Make today count" : "My Schedule"}</Text>
       </View>
       <View style={styles.dateBadge}>
         <Text style={styles.dateWeekday}>
@@ -37,9 +37,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: S.lg,
     paddingTop: S.md,
     paddingBottom: S.md,
-    backgroundColor: C.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: C.border,
+    backgroundColor: C.bg,
+    paddingTop: S.lg,
+    paddingBottom: S.sm,
   },
   greeting: {
     fontSize: 12,
@@ -49,14 +49,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   title: {
-    fontSize: 26,
+    fontSize: 25,
     fontWeight: '800',
     color: C.text,
-    letterSpacing: -0.8,
+    letterSpacing: -0.7,
+  },
+  homeTitle: {
+    color: C.primary,
+    fontSize: 24,
+    letterSpacing: -0.6,
   },
   dateBadge: {
-    backgroundColor: C.primary,
-    borderRadius: R.md,
+    backgroundColor: C.primaryLight,
+    borderRadius: R.lg,
     paddingHorizontal: S.md,
     paddingVertical: S.sm,
     alignItems: 'center',
@@ -64,13 +69,13 @@ const styles = StyleSheet.create({
   },
   dateWeekday: {
     fontSize: 9,
-    color: '#c7d2fe',
+    color: C.primary,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
   dateNum: {
     fontSize: 24,
-    color: C.surface,
+    color: C.primary,
     fontWeight: '800',
     lineHeight: 28,
   },
