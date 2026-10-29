@@ -35,6 +35,7 @@ export default function Index() {
   const [dataReady, setDataReady] = useState(false);
 
   const selectedTabRef = useRef(selectedTab);
+  const hasLoadedRef = useRef(false);
   useEffect(() => { selectedTabRef.current = selectedTab; }, [selectedTab]);
 
   const saveTimetable = useCallback(async (updated) => {
@@ -53,7 +54,9 @@ export default function Index() {
 
   // ─── Load ──────────────────────────────────────────────────────────────────
   const loadTasks = async () => {
-    setLoading(true);
+    // Keep the existing screen visible when returning to Home; only show the
+    // full loading state on the first load to avoid a navigation flicker.
+    if (!hasLoadedRef.current) setLoading(true);
     try {
       const [data1, data2] = await Promise.all([
         AsyncStorage.getItem(TIMETABLE_KEY),
@@ -84,7 +87,10 @@ export default function Index() {
       console.warn('Error loading tasks', e);
       setAllTasks([]); setFilteredTasks([]);
       setDataReady(true);
-    } finally { setLoading(false); }
+    } finally {
+      hasLoadedRef.current = true;
+      setLoading(false);
+    }
   };
 
   // ─── Filter ────────────────────────────────────────────────────────────────
@@ -266,6 +272,9 @@ export default function Index() {
           )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
         />
       )}
 
