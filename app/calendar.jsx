@@ -143,6 +143,8 @@ export default function CalendarScreen() {
       <Header />
 
       <Calendar
+        style={styles.calendar}
+        hideExtraDays={false}
         onDayPress={(day) => setSelectedDate(day.dateString)}
         onMonthChange={(month) => setVisibleMonth(month.year + '-' + String(month.month).padStart(2, '0'))}
         markedDates={markedDates}
@@ -154,7 +156,18 @@ export default function CalendarScreen() {
           arrowColor: C.primary,
           dotColor: C.primary,
           textDayFontWeight: '500',
+          textDayFontSize: 16,
+          textDayHeaderFontSize: 12,
+          textMonthFontSize: 18,
           textMonthFontWeight: '700',
+          'stylesheet.calendar.main': {
+            week: {
+              marginTop: 2,
+              marginBottom: 2,
+              flexDirection: 'row',
+              justifyContent: 'space-around',
+            },
+          },
           calendarBackground: C.surface,
           dayTextColor: C.text,
           textDisabledColor: C.textHint,
@@ -279,6 +292,7 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  calendar: { height: 360, flexShrink: 0 },
   content: { flex: 1, paddingHorizontal: S.lg, paddingTop: S.md },
   calendarActions: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
   calendarHint: { fontSize: 12, color: C.textSub, flex: 1 },
@@ -422,7 +436,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: 80,
+    paddingBottom: 24,
   },
   emptyIcon: { fontSize: 40, marginBottom: S.md },
   emptyTitle: {
