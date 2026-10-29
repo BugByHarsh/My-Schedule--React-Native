@@ -21,7 +21,7 @@ export default function StatsRow({ tasks = [], selectedDate }) {
       <View style={styles.cardHeading}>
         <View>
           <Text style={styles.cardEyebrow}>DAILY PROGRESS</Text>
-          <Text style={[styles.cardTitle, dark && styles.textPrimaryDark]}>{pct}% completed</Text>
+          <Text style={styles.cardTitle}>{pct}% completed</Text>
         </View>
         <View style={styles.progressIcon}>
           <Text style={styles.progressIconText}>{pct === 100 && total > 0 ? '✓' : '↗'}</Text>
