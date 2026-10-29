@@ -92,7 +92,10 @@ export default function CalendarScreen() {
     // New progress records include a lightweight snapshot of the task.
     Object.entries(daily).forEach(([progressId, record]) => {
       const snapshot = record?.taskSnapshot;
-      if (!snapshot || mergedById.has(snapshot.id || progressId)) return;
+      // A snapshot alone is not evidence of activity: older versions could
+      // leave snapshots behind after a task was uncompleted. Only show removed
+      // tasks in history when they were actually started or completed.
+      if (!snapshot || (!record?.started && !record?.completed) || mergedById.has(snapshot.id || progressId)) return;
       mergedById.set(snapshot.id || progressId, {
         ...snapshot,
         id: snapshot.id || progressId,
