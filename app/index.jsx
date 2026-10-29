@@ -200,7 +200,21 @@ export default function Index() {
   return (
     <SafeAreaView style={styles.container}>
       <Header />
+      <View style={styles.sectionIntro}>
+        <View>
+          <Text style={styles.sectionEyebrow}>YOUR DAY</Text>
+          <Text style={styles.sectionTitle}>Make today count</Text>
+        </View>
+        <View style={styles.todayChip}>
+          <Text style={styles.todayChipText}>{allTasks.length} {allTasks.length === 1 ? 'task' : 'tasks'}</Text>
+        </View>
+      </View>
       <StatsRow tasks={allTasks} selectedDate={todayStr} />
+
+      <View style={styles.taskSectionHeading}>
+        <Text style={styles.taskSectionTitle}>Your tasks</Text>
+        <Text style={styles.taskSectionHint}>A little progress goes a long way</Text>
+      </View>
 
       {/* Pill tabs */}
       <View style={styles.tabsWrap}>
@@ -301,6 +315,17 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  sectionIntro: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: S.lg, paddingTop: S.lg, paddingBottom: S.xs,
+  },
+  sectionEyebrow: { fontSize: 10, fontWeight: '800', color: C.primary, letterSpacing: 1.5, marginBottom: 3 },
+  sectionTitle: { fontSize: 21, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
+  todayChip: { backgroundColor: C.primaryLight, borderRadius: R.full, paddingHorizontal: S.md, paddingVertical: S.sm },
+  todayChipText: { fontSize: 12, fontWeight: '700', color: C.primary },
+  taskSectionHeading: { paddingHorizontal: S.lg, paddingTop: S.sm, paddingBottom: S.xs },
+  taskSectionTitle: { fontSize: 16, fontWeight: '800', color: C.text },
+  taskSectionHint: { fontSize: 12, color: C.textSub, marginTop: 2 },
   tabsWrap: {
     flexDirection: 'row',
     paddingHorizontal: S.lg,
