@@ -14,7 +14,7 @@ const DAYS = [
 // fromHome = true  → hide repeat-days section, CTA says "Add to Today"
 // fromHome = false → show repeat-days section (default, used in Timetable)
 export default function AddEditTaskModal({
-  visible, onClose, onAdd, onSave, editingTask, defaultDate, fromHome = false, activeDay, dark = false,
+  visible, onClose, onAdd, onSave, editingTask, defaultDate, fromHome = false, activeDay,
 }) {
   const [title,         setTitle]         = useState('');
   const [time,          setTime]          = useState('09:00');
@@ -115,15 +115,15 @@ export default function AddEditTaskModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         {/* Stop press propagation so tapping inside sheet doesn't close */}
-        <Pressable style={[styles.sheet, dark && styles.sheetDark]} onPress={() => {}}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
           <View style={styles.handle} />
 
-          <Text style={[styles.heading, dark && styles.headingDark]}>{heading}</Text>
+          <Text style={styles.heading}>{heading}</Text>
 
           {/* "Today only" notice when opened from Home */}
           {fromHome && !editingTask && (
-            <View style={[styles.noticeBanner, dark && styles.noticeBannerDark]}>
-              <Text style={[styles.noticeText, dark && styles.noticeTextDark]}>
+            <View style={styles.noticeBanner}>
+              <Text style={styles.noticeText}>
                 📅  This task will only appear on today's schedule
               </Text>
             </View>
@@ -131,7 +131,7 @@ export default function AddEditTaskModal({
 
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Title */}
-            <Text style={[styles.label, dark && styles.labelDark]}>Task Name</Text>
+            <Text style={styles.label}>Task Name</Text>
             <TextInput
               value={title}
               onChangeText={setTitle}
@@ -149,17 +149,17 @@ export default function AddEditTaskModal({
             {/* Time + Duration row */}
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, dark && styles.labelDark]}>Time</Text>
+                <Text style={styles.label}>Time</Text>
                 <Pressable
-                  style={[styles.inputRow, dark && styles.inputRowDark]}
+                  style={styles.inputRow}
                   onPress={() => setPickerVisible(true)}
                 >
-                  <Text style={[styles.inputRowText, dark && styles.inputRowTextDark]}>🕐  {time} {period}</Text>
+                  <Text style={styles.inputRowText}>🕐  {time} {period}</Text>
                   <Text style={styles.inputRowChevron}>›</Text>
                 </Pressable>
               </View>
               <View style={{ width: 110 }}>
-                <Text style={[styles.label, dark && styles.labelDark]}>Duration (min)</Text>
+                <Text style={styles.label}>Duration (min)</Text>
                 <TextInput
                   value={duration}
                   onChangeText={(v) => { if (/^\d*$/.test(v)) setDuration(v); }}
@@ -192,7 +192,7 @@ export default function AddEditTaskModal({
             {!fromHome && (
               <>
                 <View style={styles.repeatHeader}>
-                  <Text style={[styles.label, dark && styles.labelDark]}>Repeat</Text>
+                  <Text style={styles.label}>Repeat</Text>
                   <Pressable onPress={toggleAll}>
                     <Text style={styles.toggleAll}>
                       {repeatDays.length === 7 ? 'Clear all' : 'Every day'}
@@ -229,7 +229,7 @@ export default function AddEditTaskModal({
                     );
                   })}
                 </View>
-                <Text style={[styles.repeatHint, dark && styles.repeatHintDark]}>
+                <Text style={styles.repeatHint}>
                   {repeatDays.length === 0
                     ? 'No days selected — this is a one-time task for the selected day.'
                     : 'Repeats every ' + repeatDays.join(', ') + '.'}
@@ -241,14 +241,14 @@ export default function AddEditTaskModal({
           {scopePromptVisible && (
             <View style={styles.scopeOverlay}>
               <View style={[styles.scopeCard, dark && styles.scopeCardDark]}>
-                <Text style={[styles.scopeTitle, dark && styles.headingDark]}>Apply changes to</Text>
-                <Text style={[styles.scopeDescription, dark && styles.labelDark]}>
+                <Text style={styles.scopeTitle}>Apply changes to</Text>
+                <Text style={styles.scopeDescription}>
                   Choose whether this edit affects only {activeDay || 'this day'} or the whole repeating schedule.
                 </Text>
                 <Pressable accessibilityRole="button" onPress={() => saveWithScope('this-day')}
-                  style={({ pressed }) => [styles.scopeOption, dark && styles.scopeOptionDark, pressed && { opacity: 0.8 }]}>
-                  <Text style={[styles.scopeOptionTitle, dark && styles.headingDark]}>Just this day</Text>
-                  <Text style={[styles.scopeOptionHint, dark && styles.labelDark]}>Other weekdays stay unchanged</Text>
+                  style={({ pressed }) => [styles.scopeOption, pressed && { opacity: 0.8 }]}>
+                  <Text style={styles.scopeOptionTitle}>Just this day</Text>
+                  <Text style={styles.scopeOptionHint}>Other weekdays stay unchanged</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => saveWithScope('all-days')}
                   style={({ pressed }) => [styles.scopeOption, styles.scopeOptionPrimary, pressed && { opacity: 0.8 }]}>
@@ -268,7 +268,7 @@ export default function AddEditTaskModal({
               onPress={onClose}
               style={({ pressed }) => [styles.footerBtn, styles.cancelBtn, pressed && { opacity: 0.7 }]}
             >
-              <Text style={[styles.cancelText, dark && styles.labelDark]}>Cancel</Text>
+              <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable
               onPress={submit}
@@ -289,19 +289,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,23,42,0.5)',
     justifyContent: 'flex-end',
   },
-  sheetDark: { backgroundColor: "#121a2e" },
-  headingDark: { color: "#f1f5ff" },
-  labelDark: { color: "#aab5d0" },
-  noticeBannerDark: { backgroundColor: "#252f50", borderLeftColor: "#818cf8" },
-  noticeTextDark: { color: "#c7d2fe" },
-  inputDark: { backgroundColor: "#0b1020", color: "#f1f5ff", borderColor: "#26324d" },
-  inputRowDark: { backgroundColor: "#0b1020" },
-  inputRowTextDark: { color: "#f1f5ff" },
-  dayBtnDark: { backgroundColor: "#202947" },
-  dayBtnLabelDark: { color: "#aab5d0" },
-  repeatHintDark: { color: "#93a0bd" },
-  scopeCardDark: { backgroundColor: "#121a2e", borderColor: "#26324d" },
-  scopeOptionDark: { backgroundColor: "#0b1020", borderColor: "#26324d" },
   sheet: {
     backgroundColor: C.surface,
     borderTopLeftRadius: 24,
