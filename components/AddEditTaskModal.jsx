@@ -53,8 +53,13 @@ export default function AddEditTaskModal({
   const submit = () => {
     setSubmitted(true);
     if (!title.trim() || !duration.trim() || !Number.isFinite(parsedDuration) || parsedDuration < 1 || parsedDuration > 1440) return;
+    const enteredTitle = title.trim();
+    const existingTitle = (editingTask?.title || '').trim();
+    const sameTitleIgnoringCase =
+      enteredTitle.toLocaleLowerCase() === existingTitle.toLocaleLowerCase();
     const payload = {
-      title:           title.trim(),
+      // Treat case-only edits as the same name and preserve the existing series spelling.
+      title: editingTask && sameTitleIgnoringCase ? existingTitle : enteredTitle,
       time:            `${time} ${period}`,
       durationMinutes: parsedDuration,
       repeatDays:      fromHome ? [] : repeatDays, // no repeat when adding from Home
@@ -65,7 +70,7 @@ export default function AddEditTaskModal({
     if (editingTask) {
       const isRecurring = Array.isArray(editingTask.repeatDays) && editingTask.repeatDays.length > 0;
       const taskDetailsChanged =
-        payload.title !== (editingTask.title || '').trim() ||
+        !sameTitleIgnoringCase ||
         payload.time !== (editingTask.time || '09:00 AM') ||
         payload.durationMinutes !== (editingTask.durationMinutes || 60);
 
