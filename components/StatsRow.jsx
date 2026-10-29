@@ -10,34 +10,34 @@ function getMotivation(done, total) {
   return 'Nice start, keep it up! 👊';
 }
 
-export default function StatsRow({ tasks = [], selectedDate, dark = false }) {
+export default function StatsRow({ tasks = [], selectedDate }) {
   const list = tasks.filter((t) => !t.date || t.date === selectedDate);
   const total = list.length;
   const done = list.filter((t) => t.completed).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
-    <View style={[styles.card, dark && styles.cardDark]}>
+    <View style={styles.card}>
       <View style={styles.cardHeading}>
         <View>
-          <Text style={[styles.cardEyebrow, dark && styles.textMutedDark]}>DAILY PROGRESS</Text>
+          <Text style={styles.cardEyebrow}>DAILY PROGRESS</Text>
           <Text style={[styles.cardTitle, dark && styles.textPrimaryDark]}>{pct}% completed</Text>
         </View>
-        <View style={[styles.progressIcon, dark && styles.progressIconDark]}>
-          <Text style={[styles.progressIconText, dark && styles.progressIconTextDark]}>{pct === 100 && total > 0 ? '✓' : '↗'}</Text>
+        <View style={styles.progressIcon}>
+          <Text style={styles.progressIconText}>{pct === 100 && total > 0 ? '✓' : '↗'}</Text>
         </View>
       </View>
 
       {/* Progress bar */}
       <View style={styles.progressRow}>
-        <View style={[styles.progressOuter, dark && styles.progressOuterDark]}>
+        <View style={styles.progressOuter}>
           <View style={[styles.progressInner, { width: `${pct}%` }]} />
         </View>
-        <Text style={[styles.pctLabel, dark && styles.pctLabelDark]}>{pct}%</Text>
+        <Text style={styles.pctLabel}>{pct}%</Text>
       </View>
 
       {/* Motivational line */}
-      <Text style={[styles.motivation, dark && styles.textMutedDark]}>{getMotivation(done, total)}</Text>
+      <Text style={styles.motivation}>{getMotivation(done, total)}</Text>
     </View>
   );
 }
@@ -58,13 +58,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardDark: { backgroundColor: '#121a2e', borderColor: '#26324d', shadowOpacity: 0.18 },
-  textMutedDark: { color: '#93a0bd' },
-  textPrimaryDark: { color: '#f1f5ff' },
-  progressIconDark: { backgroundColor: '#252f50' },
-  progressIconTextDark: { color: '#a5b4fc' },
-  progressOuterDark: { backgroundColor: '#28324a' },
-  pctLabelDark: { color: '#a5b4fc' },
   cardHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
   cardEyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: C.textHint, marginBottom: 3 },
   cardTitle: { fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.4 },
