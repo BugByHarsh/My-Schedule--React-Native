@@ -36,6 +36,14 @@ function toMin(s) {
   return h * 60 + m;
 }
 
+// Normalize newly added task names to readable Title Case (e.g. RUnning -> Running).
+function normalizeTaskTitle(value) {
+  return String(value || '')
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/(^|[\s'-])([\p{L}\p{N}])/gu, (_, separator, character) => separator + character.toLocaleUpperCase());
+}
+
 export default function TimeTable() {
   const todayKey = getTodayKey();
   const [timetable,    setTimetable]    = useState({});
@@ -80,7 +88,7 @@ export default function TimeTable() {
       const occurrence = {
         id: `${seriesId}-${day}`,
         seriesId,
-        title: newTask.title.trim(),
+        title: normalizeTaskTitle(newTask.title),
         time: newTask.time || '09:00 AM',
         durationMinutes: newTask.durationMinutes || 60,
         repeatDays,
