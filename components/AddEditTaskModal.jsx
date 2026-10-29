@@ -151,7 +151,7 @@ export default function AddEditTaskModal({
               <View style={{ flex: 1 }}>
                 <Text style={[styles.label, dark && styles.labelDark]}>Time</Text>
                 <Pressable
-                  style={styles.inputRow}
+                  style={[styles.inputRow, dark && styles.inputRowDark]}
                   onPress={() => setPickerVisible(true)}
                 >
                   <Text style={[styles.inputRowText, dark && styles.inputRowTextDark]}>🕐  {time} {period}</Text>
@@ -212,12 +212,14 @@ export default function AddEditTaskModal({
                         accessibilityState={{ checked: active }}
                         style={[
                           styles.dayBtn,
+                          dark && styles.dayBtnDark,
                           active && styles.dayBtnActive,
                           isSun && !active && styles.dayBtnSun,
                         ]}
                       >
                         <Text style={[
                           styles.dayBtnLabel,
+                          dark && styles.dayBtnLabelDark,
                           active && styles.dayBtnLabelActive,
                           isSun && !active && styles.dayBtnLabelSun,
                         ]}>
