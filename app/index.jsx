@@ -78,7 +78,7 @@ export default function Index() {
           || (Array.isArray(task.repeatDays) && task.repeatDays.includes(weekday)));
 
       const derived = tasksForToday.map((t) => {
-        const p = todayProgress[t.id] || {};
+        const p = todayProgress[t.id] || (t.seriesId ? todayProgress[t.seriesId] : null) || {};
         return { ...t, started: !!p.started, completed: !!p.completed, startedAt: p.startedAt || null };
       });
       derived.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
