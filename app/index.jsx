@@ -73,8 +73,9 @@ export default function Index() {
       const progress = parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress)
         ? parsedProgress : {};
       const todayProgress = progress[todayStr] || {};
-      const tasksForToday = Array.isArray(loadedTimetable[weekday])
-        ? loadedTimetable[weekday] : [];
+      const tasksForToday = (Array.isArray(loadedTimetable[weekday]) ? loadedTimetable[weekday] : [])
+        .filter((task) => !task.scheduledDate || task.scheduledDate === todayStr
+          || (Array.isArray(task.repeatDays) && task.repeatDays.includes(weekday)));
 
       const derived = tasksForToday.map((t) => {
         const p = todayProgress[t.id] || {};
@@ -113,6 +114,7 @@ export default function Index() {
         time:            newTask.time || '09:00 AM',
         durationMinutes: newTask.durationMinutes || 60,
         repeatDays:      [],    // today-only: no weekly repeat
+        scheduledDate:   todayStr,
         completed:       false,
         startedOnDate:   null,
         completedOnDate: null,
