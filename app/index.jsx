@@ -15,9 +15,6 @@ import { getLocalDateKey, getShortDay } from '../utils/dates';
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY  = '@TASK_PROGRESS_v1';
 
-const todayDate = new Date();
-const weekday   = getShortDay(todayDate);
-const todayStr  = getLocalDateKey(todayDate);
 
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
@@ -41,6 +38,10 @@ export default function Index() {
   const [filteredTasks,   setFilteredTasks]   = useState([]);
   const [loading,         setLoading]         = useState(true);
   const [quickAddVisible, setQuickAddVisible] = useState(false);
+  const [todayDate, setTodayDate] = useState(() => new Date());
+  const weekday = getShortDay(todayDate);
+  const todayStr = getLocalDateKey(todayDate);
+  const [dataReady, setDataReady] = useState(false);
 
   const selectedTabRef = useRef(selectedTab);
   useEffect(() => { selectedTabRef.current = selectedTab; }, [selectedTab]);
@@ -52,9 +53,12 @@ export default function Index() {
     } catch (e) { console.warn('Failed to save timetable', e); }
   }, []);
 
-  useDailyNotifications(timetable, saveTimetable);
   useEffect(() => { initNotifications(); }, []);
-  useFocusEffect(useCallback(() => { loadTasks(); }, []));
+  useEffect(() => {
+    const timer = setInterval(() => setTodayDate(new Date()), 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
+  useFocusEffect(useCallback(() => { loadTasks(); }, [todayStr, weekday]));
 
   // ─── Load ──────────────────────────────────────────────────────────────────
   const loadTasks = async () => {
@@ -67,7 +71,13 @@ export default function Index() {
       const parsedTimetable = data1 ? JSON.parse(data1) : {};
       const loadedTimetable = parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable)
         ? parsedTimetable : {};
+      Object.keys(loadedTimetable).forEach((day) => {
+        loadedTimetable[day] = Array.isArray(loadedTimetable[day])
+          ? loadedTimetable[day].filter((task) => task && typeof task === 'object' && task.id)
+          : [];
+      });
       setTimetable(loadedTimetable);
+      setDataReady(true);
 
       const parsedProgress = data2 ? JSON.parse(data2) : {};
       const progress = parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress)
@@ -81,13 +91,12 @@ export default function Index() {
         const p = todayProgress[t.id] || (t.seriesId ? todayProgress[t.seriesId] : null) || {};
         return { ...t, started: !!p.started, completed: !!p.completed, startedAt: p.startedAt || null };
       });
-      derived.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
-
       setAllTasks(derived);
       filterTasks(selectedTabRef.current, derived);
     } catch (e) {
       console.warn('Error loading tasks', e);
       setAllTasks([]); setFilteredTasks([]);
+      setDataReady(true);
     } finally { setLoading(false); }
   };
 
@@ -123,21 +132,14 @@ export default function Index() {
       };
 
       if (!stored[weekday]) stored[weekday] = [];
-      // Prepend; skip duplicate title+time combos
-      stored[weekday] = [
-        task,
-        ...stored[weekday].filter(
-          (t) => !(t.title === task.title && t.time === task.time)
-        ),
-      ];
+      // Preserve intentional duplicate tasks; each task has its own stable ID.
+      stored[weekday] = [task, ...(Array.isArray(stored[weekday]) ? stored[weekday] : [])];
 
       await AsyncStorage.setItem(TIMETABLE_KEY, JSON.stringify(stored));
       setTimetable(stored);
 
       // Optimistically update the local list so the user sees it instantly
-      const newDerived = [task, ...allTasks].sort(
-        (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)
-      );
+      const newDerived = [task, ...allTasks];
       setAllTasks(newDerived);
       // Switch to Pending tab so the new task is immediately visible
       setSelectedTab('all');
@@ -146,6 +148,8 @@ export default function Index() {
   };
 
   // ─── Start / Complete ──────────────────────────────────────────────────────
+  useDailyNotifications(timetable, saveTimetable, dataReady);
+
   const onStart = async (task) => {
     try {
       const raw           = await AsyncStorage.getItem(PROGRESS_KEY);
@@ -153,7 +157,7 @@ export default function Index() {
       const todayProgress = progressData[todayStr] || {};
       const startedAt     = Date.now();
 
-      todayProgress[task.id] = { ...(todayProgress[task.id] || {}), started: true, startedAt };
+      todayProgress[task.id] = { ...(todayProgress[task.id] || {}), started: true, startedAt, taskSnapshot: { id: task.id, title: task.title, time: task.time, durationMinutes: task.durationMinutes, seriesId: task.seriesId || null } };
       progressData[todayStr] = todayProgress;
       await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
 
@@ -166,7 +170,8 @@ export default function Index() {
     } catch (e) { console.warn('Error starting task', e); }
   };
 
-  const onComplete = async (taskId) => {
+  const onComplete = async (task) => {
+    const taskId = typeof task === 'string' ? task : task.id;
     try {
       const raw           = await AsyncStorage.getItem(PROGRESS_KEY);
       const progressData  = raw ? JSON.parse(raw) : {};
@@ -177,6 +182,7 @@ export default function Index() {
         ...(todayProgress[taskId] || {}),
         completed:   !wasCompleted,
         completedAt: !wasCompleted ? Date.now() : null,
+        taskSnapshot: typeof task === 'object' ? { id: task.id, title: task.title, time: task.time, durationMinutes: task.durationMinutes, seriesId: task.seriesId || null } : todayProgress[taskId]?.taskSnapshot || null,
       };
       progressData[todayStr] = todayProgress;
       await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify(progressData));
@@ -281,7 +287,7 @@ export default function Index() {
             <TaskRow
               item={item}
               onStart={() => onStart(item)}
-              onComplete={() => onComplete(item.id)}
+              onComplete={() => onComplete(item)}
             />
           )}
           contentContainerStyle={styles.list}
