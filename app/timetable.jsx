@@ -138,7 +138,9 @@ export default function TimeTable() {
       updated[day].push({
         ...previous,
         ...updatedTask,
-        id: `${seriesId}-${day}-${editedAt}`,
+        id: previousByDay[day]?.id && previousByDay[day].id !== seriesId
+          ? previousByDay[day].id
+          : `${seriesId}-${day}-${editedAt}`,
         seriesId,
         repeatDays,
         scheduledDate,
