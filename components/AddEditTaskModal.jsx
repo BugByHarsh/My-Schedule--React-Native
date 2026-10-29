@@ -14,7 +14,7 @@ const DAYS = [
 // fromHome = true  → hide repeat-days section, CTA says "Add to Today"
 // fromHome = false → show repeat-days section (default, used in Timetable)
 export default function AddEditTaskModal({
-  visible, onClose, onAdd, onSave, editingTask, defaultDate, fromHome = false,
+  visible, onClose, onAdd, onSave, editingTask, defaultDate, fromHome = false, activeDay,
 }) {
   const [title,         setTitle]         = useState('');
   const [time,          setTime]          = useState('09:00');
@@ -23,9 +23,11 @@ export default function AddEditTaskModal({
   const [repeatDays,    setRepeatDays]    = useState([]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [submitted,     setSubmitted]     = useState(false);
+  const [scopePromptVisible, setScopePromptVisible] = useState(false);
 
   useEffect(() => {
-    if (!visible) { setSubmitted(false); return; }
+    if (!visible) { setSubmitted(false); setScopePromptVisible(false); return; }
+    setScopePromptVisible(false);
     if (editingTask) {
       setTitle(editingTask.title || '');
       const parts = (editingTask.time || '09:00 AM').split(' ');
@@ -58,8 +60,29 @@ export default function AddEditTaskModal({
       repeatDays:      fromHome ? [] : repeatDays, // no repeat when adding from Home
     };
     if (defaultDate) payload.date = defaultDate;
-    if (editingTask) { payload.id = editingTask.id; onSave(payload); }
-    else onAdd(payload);
+    if (editingTask) {
+      if (Array.isArray(editingTask.repeatDays) && editingTask.repeatDays.length > 0) {
+        setScopePromptVisible(true);
+        return;
+      }
+      onSave(payload, 'all-days');
+    } else {
+      onAdd(payload);
+    }
+    onClose();
+  };
+
+  const saveWithScope = (scope) => {
+    const payload = {
+      title: title.trim(),
+      time: `${time} ${period}`,
+      durationMinutes: parsedDuration,
+      repeatDays: fromHome ? [] : repeatDays,
+      id: editingTask?.id,
+    };
+    if (defaultDate) payload.date = defaultDate;
+    setScopePromptVisible(false);
+    onSave(payload, scope);
     onClose();
   };
 
@@ -198,6 +221,30 @@ export default function AddEditTaskModal({
             )}
           </ScrollView>
 
+          {scopePromptVisible && (
+            <View style={styles.scopeOverlay}>
+              <View style={styles.scopeCard}>
+                <Text style={styles.scopeTitle}>Apply changes to</Text>
+                <Text style={styles.scopeDescription}>
+                  Choose whether this edit affects only {activeDay || 'this day'} or the whole repeating schedule.
+                </Text>
+                <Pressable accessibilityRole="button" onPress={() => saveWithScope('this-day')}
+                  style={({ pressed }) => [styles.scopeOption, pressed && { opacity: 0.8 }]}>
+                  <Text style={styles.scopeOptionTitle}>Just this day</Text>
+                  <Text style={styles.scopeOptionHint}>Other weekdays stay unchanged</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={() => saveWithScope('all-days')}
+                  style={({ pressed }) => [styles.scopeOption, styles.scopeOptionPrimary, pressed && { opacity: 0.8 }]}>
+                  <Text style={[styles.scopeOptionTitle, styles.scopeOptionTitlePrimary]}>All selected days</Text>
+                  <Text style={[styles.scopeOptionHint, styles.scopeOptionHintPrimary]}>Update the selected repeating schedule</Text>
+                </Pressable>
+                <Pressable onPress={() => setScopePromptVisible(false)} style={styles.scopeCancel}>
+                  <Text style={styles.scopeCancelText}>Back to editing</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+
           {/* Footer */}
           <View style={styles.footer}>
             <Pressable
@@ -299,6 +346,24 @@ const styles = StyleSheet.create({
   dayBtnLabel:       { fontSize: 11, fontWeight: '700', color: C.textSub },
   dayBtnLabelActive: { color: '#fff' },
   dayBtnLabelSun:    { color: C.red },
+  scopeOverlay: {
+    ...StyleSheet.absoluteFillObject, zIndex: 20,
+    backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center',
+    justifyContent: 'center', padding: S.md,
+  },
+  scopeCard: { width: '100%', backgroundColor: C.surface, borderRadius: R.lg,
+    padding: S.lg, borderWidth: 1, borderColor: C.border },
+  scopeTitle: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: S.xs },
+  scopeDescription: { fontSize: 13, lineHeight: 19, color: C.textSub, marginBottom: S.md },
+  scopeOption: { borderWidth: 1, borderColor: C.border, borderRadius: R.md,
+    padding: S.md, marginTop: S.sm, backgroundColor: C.bg },
+  scopeOptionPrimary: { backgroundColor: C.primary, borderColor: C.primary },
+  scopeOptionTitle: { fontSize: 14, fontWeight: '700', color: C.text },
+  scopeOptionTitlePrimary: { color: '#fff' },
+  scopeOptionHint: { fontSize: 12, lineHeight: 17, color: C.textSub, marginTop: 3 },
+  scopeOptionHintPrimary: { color: '#eef2ff' },
+  scopeCancel: { alignItems: 'center', paddingVertical: S.md, marginTop: S.xs },
+  scopeCancelText: { fontSize: 13, fontWeight: '600', color: C.primary },
   footer: { flexDirection: 'row', gap: S.md, marginTop: S.xl },
   footerBtn: {
     flex: 1, paddingVertical: S.md,
