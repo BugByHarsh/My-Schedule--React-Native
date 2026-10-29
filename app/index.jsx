@@ -10,7 +10,7 @@ import AddEditTaskModal from '../components/AddEditTaskModal';
 import { initNotifications } from '../utils/notifications';
 import { useDailyNotifications } from '../utils/useDailyNotifs';
 import { C, S, R } from '../theme';
-import { getLocalDateKey, getShortDay } from '../utils/dates';
+import { getLocalDateKey, getShortDay, normalizeTimetable } from '../utils/dates';
 
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY  = '@TASK_PROGRESS_v1';
@@ -60,13 +60,9 @@ export default function Index() {
         AsyncStorage.getItem(PROGRESS_KEY),
       ]);
       const parsedTimetable = data1 ? JSON.parse(data1) : {};
-      const loadedTimetable = parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable)
-        ? parsedTimetable : {};
-      Object.keys(loadedTimetable).forEach((day) => {
-        loadedTimetable[day] = Array.isArray(loadedTimetable[day])
-          ? loadedTimetable[day].filter((task) => task && typeof task === 'object' && task.id)
-          : [];
-      });
+      const normalized = normalizeTimetable(parsedTimetable, todayDate);
+      const loadedTimetable = normalized.timetable;
+      if (normalized.changed) await AsyncStorage.setItem(TIMETABLE_KEY, JSON.stringify(loadedTimetable));
       setTimetable(loadedTimetable);
       setDataReady(true);
 
