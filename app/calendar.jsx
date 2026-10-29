@@ -53,7 +53,13 @@ export default function CalendarScreen() {
   useEffect(() => {
     if (!selectedDate) return;
     const shortDay = getShortDayLocal(selectedDate);
-    const base = timetable[shortDay] || [];
+    const base = (Array.isArray(timetable[shortDay]) ? timetable[shortDay] : []).filter((task) => {
+      const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay);
+      if (task.scheduledDate) return task.scheduledDate === selectedDate;
+      // Preserve legacy tasks created before date-specific one-off dates were stored.
+      return true;
+    });
     const daily = progress[selectedDate] || {};
     const merged = base.map((task) => {
       const p = daily[task.id] || {};
