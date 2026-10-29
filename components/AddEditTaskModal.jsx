@@ -136,7 +136,7 @@ export default function AddEditTaskModal({
               value={title}
               onChangeText={setTitle}
               accessibilityLabel="Task name"
-              style={[styles.input, dark && styles.inputDark, isTitleError && styles.inputError]}
+              style={[styles.input, isTitleError && styles.inputError]}
               placeholder="e.g. Morning Run"
               placeholderTextColor={C.textHint}
               returnKeyType="done"
@@ -166,7 +166,7 @@ export default function AddEditTaskModal({
                   accessibilityLabel="Duration in minutes"
                   keyboardType="numeric"
                   maxLength={4}
-                  style={[styles.input, dark && styles.inputDark, isDurationError && styles.inputError]}
+                  style={[styles.input, isDurationError && styles.inputError]}
                   placeholder="60"
                   placeholderTextColor={C.textHint}
                 />
@@ -212,14 +212,12 @@ export default function AddEditTaskModal({
                         accessibilityState={{ checked: active }}
                         style={[
                           styles.dayBtn,
-                          dark && styles.dayBtnDark,
                           active && styles.dayBtnActive,
                           isSun && !active && styles.dayBtnSun,
                         ]}
                       >
                         <Text style={[
                           styles.dayBtnLabel,
-                          dark && styles.dayBtnLabelDark,
                           active && styles.dayBtnLabelActive,
                           isSun && !active && styles.dayBtnLabelSun,
                         ]}>
@@ -240,7 +238,7 @@ export default function AddEditTaskModal({
 
           {scopePromptVisible && (
             <View style={styles.scopeOverlay}>
-              <View style={[styles.scopeCard, dark && styles.scopeCardDark]}>
+              <View style={styles.scopeCard}>
                 <Text style={styles.scopeTitle}>Apply changes to</Text>
                 <Text style={styles.scopeDescription}>
                   Choose whether this edit affects only {activeDay || 'this day'} or the whole repeating schedule.
