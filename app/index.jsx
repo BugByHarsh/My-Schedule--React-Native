@@ -16,15 +16,6 @@ const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY  = '@TASK_PROGRESS_v1';
 
 
-function timeToMinutes(timeStr) {
-  if (!timeStr) return 0;
-  const [time, period] = timeStr.trim().split(' ');
-  let [h, m] = time.split(':').map(Number);
-  if (period === 'PM' && h !== 12) h += 12;
-  if (period === 'AM' && h === 12) h = 0;
-  return h * 60 + m;
-}
-
 const TABS = [
   { key: 'all',       label: 'Pending',   color: C.textSub, bg: C.bg      },
   { key: 'started',   label: 'Started',   color: C.amber,   bg: C.amberBg },
@@ -114,8 +105,9 @@ export default function Index() {
   // Immediately reflects in the Home list without a full reload.
   const onQuickAdd = async (newTask) => {
     try {
-      const raw    = await AsyncStorage.getItem(TIMETABLE_KEY);
-      const stored = raw ? JSON.parse(raw) : {};
+      const raw = await AsyncStorage.getItem(TIMETABLE_KEY);
+      const parsedStored = raw ? JSON.parse(raw) : {};
+      const stored = parsedStored && typeof parsedStored === 'object' && !Array.isArray(parsedStored) ? parsedStored : {};
       const id     = Date.now().toString();
       const task   = {
         id,
@@ -133,7 +125,7 @@ export default function Index() {
 
       if (!stored[weekday]) stored[weekday] = [];
       // Preserve intentional duplicate tasks; each task has its own stable ID.
-      stored[weekday] = [task, ...(Array.isArray(stored[weekday]) ? stored[weekday] : [])];
+      stored[weekday] = [task, ...(Array.isArray(stored[weekday]) ? stored[weekday].filter((item) => item && typeof item === 'object' && item.id) : [])];
 
       await AsyncStorage.setItem(TIMETABLE_KEY, JSON.stringify(stored));
       setTimetable(stored);
