@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
@@ -115,28 +115,31 @@ export default function CalendarScreen() {
   const isPast = selectedDate < todayStr;
   const isToday = selectedDate === todayStr;
 
-  // Mark days that contain recurring or date-specific tasks in the visible month.
-  const markedDates = {};
-  const [visibleYear, visibleMonthNumber] = visibleMonth.split('-').map(Number);
-  const daysInVisibleMonth = new Date(visibleYear, visibleMonthNumber, 0).getDate();
-  for (let day = 1; day <= daysInVisibleMonth; day += 1) {
-    const dateKey = visibleMonth + '-' + String(day).padStart(2, '0');
-    const shortDay = getShortDayLocal(dateKey);
-    const tasksForDay = Array.isArray(timetable[shortDay]) ? timetable[shortDay] : [];
-    const hasTasks = tasksForDay.some((task) => {
-      const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
-      if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, dateKey);
-      if (task.scheduledDate) return task.scheduledDate === dateKey;
-      // Legacy tasks without a stored date retain their previous compatibility behavior.
-      return true;
-    });
-    if (hasTasks) markedDates[dateKey] = { marked: true, dotColor: C.primary };
-  }
-  markedDates[selectedDate] = {
-    ...(markedDates[selectedDate] || {}),
-    selected: true,
-    selectedColor: C.primary,
-  };
+  // Rebuild calendar dots only when the month, timetable, or selected date changes.
+  const markedDates = useMemo(() => {
+    const marks = {};
+    const [visibleYear, visibleMonthNumber] = visibleMonth.split('-').map(Number);
+    const daysInVisibleMonth = new Date(visibleYear, visibleMonthNumber, 0).getDate();
+    for (let day = 1; day <= daysInVisibleMonth; day += 1) {
+      const dateKey = visibleMonth + '-' + String(day).padStart(2, '0');
+      const shortDay = getShortDayLocal(dateKey);
+      const tasksForDay = Array.isArray(timetable[shortDay]) ? timetable[shortDay] : [];
+      const hasTasks = tasksForDay.some((task) => {
+        const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+        if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, dateKey);
+        if (task.scheduledDate) return task.scheduledDate === dateKey;
+        // Legacy tasks without a stored date retain their previous compatibility behavior.
+        return true;
+      });
+      if (hasTasks) marks[dateKey] = { marked: true, dotColor: C.primary };
+    }
+    marks[selectedDate] = {
+      ...(marks[selectedDate] || {}),
+      selected: true,
+      selectedColor: C.primary,
+    };
+    return marks;
+  }, [visibleMonth, timetable, selectedDate]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -241,6 +244,9 @@ export default function CalendarScreen() {
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: S.xl }}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={7}
             renderItem={({ item }) => {
               const statusColor = item.completed ? C.green
                 : item.started ? C.amber
