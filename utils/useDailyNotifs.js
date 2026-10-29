@@ -27,7 +27,7 @@ export function useDailyNotifications(timetable, saveTimetable) {
       let didChange = false;
 
       for (const day of Object.keys(updated)) {
-        const tasks = updated[day] || [];
+        const tasks = Array.isArray(updated[day]) ? updated[day] : [];
 
         const newTasks = await Promise.all(
           tasks.map(async (task) => {
