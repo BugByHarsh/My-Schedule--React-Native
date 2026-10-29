@@ -294,6 +294,7 @@ export default function Index() {
         onSave={() => {}}   // editing never happens from Home
         editingTask={null}
         fromHome
+        dark
       />
     </SafeAreaView>
   );
