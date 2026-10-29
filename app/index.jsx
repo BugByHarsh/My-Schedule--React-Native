@@ -64,10 +64,14 @@ export default function Index() {
         AsyncStorage.getItem(TIMETABLE_KEY),
         AsyncStorage.getItem(PROGRESS_KEY),
       ]);
-      const loadedTimetable = data1 ? JSON.parse(data1) : {};
+      const parsedTimetable = data1 ? JSON.parse(data1) : {};
+      const loadedTimetable = parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable)
+        ? parsedTimetable : {};
       setTimetable(loadedTimetable);
 
-      const progress      = data2 ? JSON.parse(data2) : {};
+      const parsedProgress = data2 ? JSON.parse(data2) : {};
+      const progress = parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress)
+        ? parsedProgress : {};
       const todayProgress = progress[todayStr] || {};
       const tasksForToday = Array.isArray(loadedTimetable[weekday])
         ? loadedTimetable[weekday] : [];
