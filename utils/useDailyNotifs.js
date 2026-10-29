@@ -40,6 +40,11 @@ export function useDailyNotifications(timetable, saveTimetable) {
               return { ...task, notifId: null };
             }
 
+            // A date-specific task only belongs to its actual calendar date.
+            if (!Array.isArray(task.repeatDays) || task.repeatDays.length === 0) {
+              if (task.scheduledDate && task.scheduledDate !== todayDate) return task;
+            }
+
             // Schedule for today's tasks that don't have a notifId yet
             if (taskDay === todayName && !task.notifId) {
               const [timePart, meridianRaw] = task.time.trim().split(' ');
