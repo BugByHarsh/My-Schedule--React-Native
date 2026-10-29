@@ -8,13 +8,13 @@ function getGreeting() {
   return 'Good evening 🌙';
 }
 
-export default function Header({ home = false }) {
+export default function Header() {
   const today = new Date();
   return (
     <View style={styles.header}>
       <View>
         <Text style={styles.greeting}>{getGreeting()}</Text>
-        <Text style={[styles.title, home && styles.homeTitle]}>{home ? "Make today count" : "My Schedule"}</Text>
+        <Text style={[styles.title, styles.homeTitle]}>"Make today count"</Text>
       </View>
       <View style={styles.dateBadge}>
         <Text style={styles.dateWeekday}>
