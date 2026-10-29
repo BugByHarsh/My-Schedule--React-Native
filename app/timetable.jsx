@@ -17,7 +17,7 @@ import AddEditTaskModal from '../components/AddEditTaskModal';
 import TaskRowTable from '../components/TaskRowTable';
 import { cancelScheduled } from '../utils/notifications';
 import { C, S, R } from '../theme';
-import { getNextDateForShortDay } from '../utils/dates';
+import { getNextDateForShortDay, normalizeTimetable } from '../utils/dates';
 
 const STORAGE_KEY = '@TIMETABLE_v1';
 const WEEKDAYS    = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -61,9 +61,9 @@ export default function TimeTable() {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
       const parsed = data ? JSON.parse(data) : {};
-      const normalized = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-      Object.keys(normalized).forEach((day) => { if (!Array.isArray(normalized[day])) normalized[day] = []; });
-      setTimetable(normalized);
+      const result = normalizeTimetable(parsed);
+      if (result.changed) await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(result.timetable));
+      setTimetable(result.timetable);
     } catch (e) { console.warn('Failed to load timetable', e); setTimetable({}); }
     finally { setDataReady(true); }
   };
