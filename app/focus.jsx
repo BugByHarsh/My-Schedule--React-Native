@@ -10,6 +10,7 @@ export default function FocusScreen() {
   const [duration, setDuration] = useState(null);
   const [remaining, setRemaining] = useState(null);
   const [running, setRunning] = useState(false);
+  const [endsAt, setEndsAt] = useState(null);
   const [taskTitle, setTaskTitle] = useState('');
   const completedRef = useRef(false);
 
@@ -23,18 +24,39 @@ export default function FocusScreen() {
           const stored = await AsyncStorage.getItem('@Focus_Duration');
           if (!stored || !isActive) return;
           const parsed = JSON.parse(stored);
-          const { durationMinutes, startedAt, taskTitle: title } = parsed;
-          if (!durationMinutes || !startedAt) {
-            setDuration(null); setRemaining(null); setRunning(false); return;
+          const durationMinutes = Number(parsed.durationMinutes);
+          if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); return;
           }
-          const totalSeconds = durationMinutes * 60;
-          const elapsed = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-          const left = Math.max(totalSeconds - elapsed, 0);
+
+          let left;
+          let isRunning;
+          let endTimestamp = null;
+          if (Number.isFinite(parsed.remainingSeconds)) {
+            isRunning = parsed.isRunning !== false;
+            if (isRunning && Number.isFinite(parsed.endsAt)) {
+              endTimestamp = parsed.endsAt;
+              left = Math.max(0, Math.ceil((endTimestamp - Date.now()) / 1000));
+            } else {
+              isRunning = false;
+              left = Math.max(0, Math.floor(parsed.remainingSeconds));
+            }
+          } else {
+            // Backward compatibility with sessions saved by older app versions.
+            const startedAt = new Date(parsed.startedAt).getTime();
+            left = Number.isFinite(startedAt)
+              ? Math.max(0, durationMinutes * 60 - Math.floor((Date.now() - startedAt) / 1000))
+              : durationMinutes * 60;
+            isRunning = left > 0;
+            endTimestamp = isRunning ? Date.now() + left * 1000 : null;
+          }
+
           if (!isActive) return;
           setDuration(durationMinutes);
           setRemaining(left);
-          setTaskTitle(title || '');
-          setRunning(left > 0);
+          setTaskTitle(typeof parsed.taskTitle === 'string' ? parsed.taskTitle : '');
+          setEndsAt(endTimestamp);
+          setRunning(left > 0 && isRunning);
         } catch (e) {
           console.warn('⚠️ Failed to load focus data', e);
           setDuration(null); setRemaining(null); setRunning(false);
@@ -46,18 +68,21 @@ export default function FocusScreen() {
   );
 
   useEffect(() => {
-    if (!running || remaining === null) return;
-    if (remaining > 0) {
-      const timer = setInterval(() => setRemaining((r) => r - 1), 1000);
-      return () => clearInterval(timer);
-    }
-    if (!completedRef.current && duration !== null) {
-      completedRef.current = true;
-      setRunning(false);
-      Vibration.vibrate([0, 400, 200, 400]);
-      handleFocusComplete();
-    }
-  }, [running, remaining, duration]);
+    if (!running || !Number.isFinite(endsAt)) return;
+    const tick = () => setRemaining(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [running, endsAt]);
+
+  useEffect(() => {
+    if (remaining !== 0 || duration === null || completedRef.current) return;
+    completedRef.current = true;
+    setRunning(false);
+    setEndsAt(null);
+    Vibration.vibrate([0, 400, 200, 400]);
+    handleFocusComplete();
+  }, [remaining, duration]);
 
   async function handleFocusComplete() {
     try {
@@ -68,7 +93,39 @@ export default function FocusScreen() {
     } catch (e) { console.warn('Failed to clear focus data:', e); }
   }
 
-  const toggleRunning = () => { if (remaining > 0) setRunning((r) => !r); };
+  const toggleRunning = async () => {
+    if (remaining === null || remaining <= 0 || duration === null) return;
+    try {
+      if (running) {
+        const left = Number.isFinite(endsAt)
+          ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
+          : remaining;
+        setRemaining(left);
+        setRunning(false);
+        setEndsAt(null);
+        await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
+          durationMinutes: duration,
+          taskTitle,
+          remainingSeconds: left,
+          isRunning: false,
+          endsAt: null,
+        }));
+      } else {
+        const nextEnd = Date.now() + remaining * 1000;
+        setEndsAt(nextEnd);
+        setRunning(true);
+        await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
+          durationMinutes: duration,
+          taskTitle,
+          remainingSeconds: remaining,
+          isRunning: true,
+          endsAt: nextEnd,
+        }));
+      }
+    } catch (e) {
+      console.warn('Failed to save focus session state', e);
+    }
+  };
 
   // Fallback
   if (duration === null || remaining === null) {
@@ -150,7 +207,11 @@ export default function FocusScreen() {
       <Pressable
         style={({ pressed }) => [styles.exitBtn, pressed && { opacity: 0.6 }]}
         onPress={async () => {
-          await AsyncStorage.removeItem('@Focus_Duration');
+          try {
+            await AsyncStorage.removeItem('@Focus_Duration');
+          } catch (e) {
+            console.warn('Failed to clear focus session', e);
+          }
           router.back();
         }}
       >
