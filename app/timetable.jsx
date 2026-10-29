@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, TouchableOpacity, FlatList, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity, FlatList, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -43,6 +43,7 @@ export default function TimeTable() {
   const [activeDay,    setActiveDay]    = useState(todayKey);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask,  setEditingTask]  = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
   // dragging = true while user is actively dragging a row
   const [dragging,     setDragging]     = useState(false);
 
@@ -160,26 +161,26 @@ export default function TimeTable() {
   };
 
   // ─── Delete ────────────────────────────────────────────────────────────────
-  const onDelete = (task) => {
-    Alert.alert('Delete Task', `Remove "${task.title}" from all days?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive',
-        onPress: async () => {
-          const updated = { ...timetable };
-          const seriesId = task.seriesId || task.id;
-          for (const day of WEEKDAYS) {
-            if (updated[day]) {
-              for (const t of updated[day]) {
-                if ((t.seriesId || t.id) === seriesId && t.notifId) await cancelScheduled(t.notifId);
-              }
-              updated[day] = updated[day].filter((t) => (t.seriesId || t.id) !== seriesId);
-            }
+  const onDelete = (task) => setPendingDelete(task);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const taskToDelete = pendingDelete;
+    setPendingDelete(null);
+    const updated = { ...timetable };
+    const seriesId = taskToDelete.seriesId || taskToDelete.id;
+    for (const day of WEEKDAYS) {
+      if (updated[day]) {
+        for (const t of updated[day]) {
+          if ((t.seriesId || t.id) === seriesId && t.notifId) {
+            try { await cancelScheduled(t.notifId); }
+            catch (error) { console.warn('Failed to cancel task notification', error); }
           }
-          saveTimetable(updated);
-        },
-      },
-    ]);
+        }
+        updated[day] = updated[day].filter((t) => (t.seriesId || t.id) !== seriesId);
+      }
+    }
+    await saveTimetable(updated);
   };
 
   // ─── Drag to reorder ───────────────────────────────────────────────────────
@@ -339,6 +340,43 @@ export default function TimeTable() {
           hideDate
           showRepeatDays
         />
+
+        <Modal
+          visible={!!pendingDelete}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setPendingDelete(null)}
+        >
+          <View style={styles.deleteBackdrop}>
+            <View style={styles.deleteDialog}>
+              <Text style={styles.deleteTitle}>Delete task?</Text>
+              <Text style={styles.deleteMessage}>
+                {pendingDelete
+                  ? `Remove "${pendingDelete.title}" from all days?`
+                  : ''}
+              </Text>
+              <Text style={styles.deleteHint}>
+                If this task repeats, all occurrences in its series will be removed.
+              </Text>
+              <View style={styles.deleteActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setPendingDelete(null)}
+                  style={({ pressed }) => [styles.deleteCancelButton, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.deleteCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={confirmDelete}
+                  style={({ pressed }) => [styles.deleteConfirmButton, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.deleteConfirmText}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
   );
 
@@ -352,6 +390,36 @@ export default function TimeTable() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
+  deleteBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: S.xl,
+  },
+  deleteDialog: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    padding: S.xl,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  deleteTitle: { fontSize: 19, fontWeight: '800', color: C.text, marginBottom: S.sm },
+  deleteMessage: { fontSize: 14, lineHeight: 20, color: C.text, marginBottom: S.sm },
+  deleteHint: { fontSize: 12, lineHeight: 18, color: C.textSub, marginBottom: S.lg },
+  deleteActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: S.sm },
+  deleteCancelButton: {
+    paddingHorizontal: S.lg, paddingVertical: S.md, borderRadius: R.md,
+    backgroundColor: C.bg, borderWidth: 1, borderColor: C.border2,
+  },
+  deleteCancelText: { color: C.textSub, fontWeight: '700', fontSize: 14 },
+  deleteConfirmButton: {
+    paddingHorizontal: S.lg, paddingVertical: S.md, borderRadius: R.md,
+    backgroundColor: C.red,
+  },
+  deleteConfirmText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Day strip
   dayStrip: {
