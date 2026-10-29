@@ -26,6 +26,7 @@ function toMin(s) {
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(() => getLocalDateKey());
+  const [visibleMonth, setVisibleMonth] = useState(() => getLocalDateKey().slice(0, 7));
   const [timetable, setTimetable] = useState({});
   const [dayTasks, setDayTasks] = useState([]);
   const [progress, setProgress] = useState({});
@@ -75,13 +76,37 @@ export default function CalendarScreen() {
   const isPast = selectedDate < todayStr;
   const isToday = selectedDate === todayStr;
 
+  // Mark days that contain recurring or date-specific tasks in the visible month.
+  const markedDates = {};
+  const [visibleYear, visibleMonthNumber] = visibleMonth.split('-').map(Number);
+  const daysInVisibleMonth = new Date(visibleYear, visibleMonthNumber, 0).getDate();
+  for (let day = 1; day <= daysInVisibleMonth; day += 1) {
+    const dateKey = visibleMonth + '-' + String(day).padStart(2, '0');
+    const shortDay = getShortDayLocal(dateKey);
+    const tasksForDay = Array.isArray(timetable[shortDay]) ? timetable[shortDay] : [];
+    const hasTasks = tasksForDay.some((task) => {
+      const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay);
+      if (task.scheduledDate) return task.scheduledDate === dateKey;
+      // Legacy tasks without a stored date retain their previous compatibility behavior.
+      return true;
+    });
+    if (hasTasks) markedDates[dateKey] = { marked: true, dotColor: C.primary };
+  }
+  markedDates[selectedDate] = {
+    ...(markedDates[selectedDate] || {}),
+    selected: true,
+    selectedColor: C.primary,
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Header />
 
       <Calendar
         onDayPress={(day) => setSelectedDate(day.dateString)}
-        markedDates={{ [selectedDate]: { selected: true, selectedColor: C.primary } }}
+        onMonthChange={(month) => setVisibleMonth(month.year + '-' + String(month.month).padStart(2, '0'))}
+        markedDates={markedDates}
         initialDate={selectedDate}
         theme={{
           selectedDayBackgroundColor: C.primary,
@@ -100,7 +125,7 @@ export default function CalendarScreen() {
 
       <View style={styles.content}>
         <View style={styles.calendarActions}>
-          <Text style={styles.calendarHint}>Select a day to review your schedule</Text>
+          <Text style={styles.calendarHint}>Dots mark scheduled days · Select a date to review it</Text>
           {!isToday && (
             <Pressable
               accessibilityRole="button"
