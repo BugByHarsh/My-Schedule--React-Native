@@ -40,8 +40,10 @@ export default function CalendarScreen() {
         AsyncStorage.getItem(TIMETABLE_KEY),
         AsyncStorage.getItem(PROGRESS_KEY),
       ]);
-      setTimetable(d1 ? JSON.parse(d1) : {});
-      setProgress(d2 ? JSON.parse(d2) : {});
+      const parsedTimetable = d1 ? JSON.parse(d1) : {};
+      const parsedProgress = d2 ? JSON.parse(d2) : {};
+      setTimetable(parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable) ? parsedTimetable : {});
+      setProgress(parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress) ? parsedProgress : {});
     } catch (e) {
       console.warn('Error loading data', e);
       setTimetable({}); setProgress({});
