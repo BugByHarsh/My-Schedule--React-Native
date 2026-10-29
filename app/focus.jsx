@@ -22,7 +22,11 @@ export default function FocusScreen() {
       (async () => {
         try {
           const stored = await AsyncStorage.getItem('@Focus_Duration');
-          if (!stored || !isActive) return;
+          if (!isActive) return;
+          if (!stored) {
+            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle('');
+            return;
+          }
           const parsed = JSON.parse(stored);
           const durationMinutes = Number(parsed.durationMinutes);
           if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
@@ -59,7 +63,7 @@ export default function FocusScreen() {
           setRunning(left > 0 && isRunning);
         } catch (e) {
           console.warn('⚠️ Failed to load focus data', e);
-          setDuration(null); setRemaining(null); setRunning(false);
+          setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle('');
         }
       })();
 
