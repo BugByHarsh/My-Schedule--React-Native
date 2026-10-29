@@ -62,10 +62,25 @@ export default function CalendarScreen() {
       return true;
     });
     const daily = progress[selectedDate] || {};
-    const merged = base.map((task) => {
+    const mergedById = new Map(base.map((task) => {
       const p = daily[task.id] || (task.seriesId ? daily[task.seriesId] : null) || {};
-      return { ...task, completed: !!p.completed, started: !!p.started };
+      return [task.id, { ...task, completed: !!p.completed, started: !!p.started }];
+    }));
+
+    // Retain historical tasks after they are removed from the current timetable.
+    // New progress records include a lightweight snapshot of the task.
+    Object.entries(daily).forEach(([progressId, record]) => {
+      const snapshot = record?.taskSnapshot;
+      if (!snapshot || mergedById.has(snapshot.id || progressId)) return;
+      mergedById.set(snapshot.id || progressId, {
+        ...snapshot,
+        id: snapshot.id || progressId,
+        completed: !!record.completed,
+        started: !!record.started,
+        historicalOnly: true,
+      });
     });
+    const merged = [...mergedById.values()];
     merged.sort((a, b) => toMin(a.time) - toMin(b.time));
     setDayTasks(merged);
   }, [selectedDate, timetable, progress]);
