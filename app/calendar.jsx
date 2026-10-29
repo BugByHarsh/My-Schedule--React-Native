@@ -6,13 +6,13 @@ import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import { C, S, R } from '../theme';
+import { getLocalDateKey, getShortDay, parseLocalDateKey } from '../utils/dates';
 
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY = '@TASK_PROGRESS_v1';
 
 function getShortDayLocal(dateString) {
-  const [y, m, d] = dateString.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short' });
+  return getShortDay(parseLocalDateKey(dateString));
 }
 
 function toMin(s) {
@@ -25,12 +25,12 @@ function toMin(s) {
 }
 
 export default function CalendarScreen() {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateKey());
   const [timetable, setTimetable] = useState({});
   const [dayTasks, setDayTasks] = useState([]);
   const [progress, setProgress] = useState({});
   const isFocused = useIsFocused();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateKey();
 
   useEffect(() => { if (isFocused) loadAll(); }, [isFocused]);
 
@@ -40,8 +40,10 @@ export default function CalendarScreen() {
         AsyncStorage.getItem(TIMETABLE_KEY),
         AsyncStorage.getItem(PROGRESS_KEY),
       ]);
-      setTimetable(d1 ? JSON.parse(d1) : {});
-      setProgress(d2 ? JSON.parse(d2) : {});
+      const parsedTimetable = d1 ? JSON.parse(d1) : {};
+      const parsedProgress = d2 ? JSON.parse(d2) : {};
+      setTimetable(parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable) ? parsedTimetable : {});
+      setProgress(parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress) ? parsedProgress : {});
     } catch (e) {
       console.warn('Error loading data', e);
       setTimetable({}); setProgress({});
@@ -51,7 +53,13 @@ export default function CalendarScreen() {
   useEffect(() => {
     if (!selectedDate) return;
     const shortDay = getShortDayLocal(selectedDate);
-    const base = timetable[shortDay] || [];
+    const base = (Array.isArray(timetable[shortDay]) ? timetable[shortDay] : []).filter((task) => {
+      const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay);
+      if (task.scheduledDate) return task.scheduledDate === selectedDate;
+      // Preserve legacy tasks created before date-specific one-off dates were stored.
+      return true;
+    });
     const daily = progress[selectedDate] || {};
     const merged = base.map((task) => {
       const p = daily[task.id] || {};
@@ -96,7 +104,7 @@ export default function CalendarScreen() {
           <View style={styles.summaryTop}>
             <View>
               <Text style={styles.summaryDate}>
-                {isToday ? 'Today' : new Date(...selectedDate.split('-').map(Number)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                {isToday ? 'Today' : parseLocalDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </Text>
               <Text style={styles.summaryCount}>
                 {dayTasks.length === 0

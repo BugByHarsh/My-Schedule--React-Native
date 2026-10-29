@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { scheduleStartNotification, cancelScheduled } from './notifications';
+import { getLocalDateKey, getShortDay } from './dates';
 
 export function useDailyNotifications(timetable, saveTimetable) {
   const lastTimetableRef = useRef(null);
@@ -19,18 +20,14 @@ export function useDailyNotifications(timetable, saveTimetable) {
 
     async function handleNotifications() {
       const today = new Date();
-      const todayDate = today.toISOString().split('T')[0];
-      // BUG FIX: same UTC/local issue — use locale string for the day name so
-      // it matches what getTodayKey() and getShortDayLocal() return in the screens.
-      const todayName = today
-        .toLocaleDateString('en-US', { weekday: 'short' })
-        .toLowerCase(); // e.g. "mon"
+      const todayDate = getLocalDateKey(today);
+      const todayName = getShortDay(today).toLowerCase();
 
       const updated = { ...timetable };
       let didChange = false;
 
       for (const day of Object.keys(updated)) {
-        const tasks = updated[day] || [];
+        const tasks = Array.isArray(updated[day]) ? updated[day] : [];
 
         const newTasks = await Promise.all(
           tasks.map(async (task) => {
@@ -41,6 +38,11 @@ export function useDailyNotifications(timetable, saveTimetable) {
               await cancelScheduled(task.notifId);
               didChange = true;
               return { ...task, notifId: null };
+            }
+
+            // A date-specific task only belongs to its actual calendar date.
+            if (!Array.isArray(task.repeatDays) || task.repeatDays.length === 0) {
+              if (task.scheduledDate && task.scheduledDate !== todayDate) return task;
             }
 
             // Schedule for today's tasks that don't have a notifId yet
@@ -86,12 +88,10 @@ export function useDailyNotifications(timetable, saveTimetable) {
           .filter(Boolean)
       );
 
-      if (allValidIds.size > 0) {
-        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-        for (const n of scheduled) {
-          if (!allValidIds.has(n.identifier)) {
-            await cancelScheduled(n.identifier);
-          }
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      for (const notification of scheduled) {
+        if (!allValidIds.has(notification.identifier)) {
+          await cancelScheduled(notification.identifier);
         }
       }
 

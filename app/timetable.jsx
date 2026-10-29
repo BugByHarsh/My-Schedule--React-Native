@@ -17,6 +17,7 @@ import AddEditTaskModal from '../components/AddEditTaskModal';
 import TaskRowTable from '../components/TaskRowTable';
 import { cancelScheduled } from '../utils/notifications';
 import { C, S, R } from '../theme';
+import { getNextDateForShortDay } from '../utils/dates';
 
 const STORAGE_KEY = '@TIMETABLE_v1';
 const WEEKDAYS    = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -71,6 +72,7 @@ export default function TimeTable() {
       time:            newTask.time || '09:00 AM',
       durationMinutes: newTask.durationMinutes || 60,
       repeatDays:      newTask.repeatDays || [],
+      scheduledDate:   (newTask.repeatDays || []).length ? null : getNextDateForShortDay(activeDay),
       completed:       false,
       startedOnDate:   null,
       completedOnDate: null,
@@ -92,10 +94,23 @@ export default function TimeTable() {
   };
 
   // ─── Edit ──────────────────────────────────────────────────────────────────
-  const onEditSave = (updatedTask) => {
-    const updated    = { ...timetable };
-    const repeatDays = updatedTask.repeatDays?.length
-      ? updatedTask.repeatDays : [activeDay];
+  const onEditSave = async (updatedTask) => {
+    const updated = { ...timetable };
+    const originalTask = WEEKDAYS.flatMap((day) => updated[day] || []).find((task) => task.id === updatedTask.id);
+    // Editing time/title invalidates any already-scheduled reminder for this task.
+    for (const day of WEEKDAYS) {
+      for (const task of updated[day] || []) {
+        if (task.id === updatedTask.id && task.notifId) await cancelScheduled(task.notifId);
+      }
+    }
+    const repeatDays = updatedTask.repeatDays?.length ? updatedTask.repeatDays : [activeDay];
+    updatedTask = {
+      ...updatedTask,
+      notifId: null,
+      scheduledDate: updatedTask.repeatDays?.length
+        ? null
+        : (originalTask?.scheduledDate || getNextDateForShortDay(activeDay)),
+    };
 
     WEEKDAYS.forEach((day) => {
       if (updated[day]) updated[day] = updated[day].filter((t) => t.id !== updatedTask.id);

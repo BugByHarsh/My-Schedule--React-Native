@@ -10,13 +10,14 @@ import AddEditTaskModal from '../components/AddEditTaskModal';
 import { initNotifications } from '../utils/notifications';
 import { useDailyNotifications } from '../utils/useDailyNotifs';
 import { C, S, R } from '../theme';
+import { getLocalDateKey, getShortDay } from '../utils/dates';
 
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY  = '@TASK_PROGRESS_v1';
 
 const todayDate = new Date();
-const weekday   = todayDate.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon"
-const todayStr  = todayDate.toISOString().slice(0, 10);                        // "YYYY-MM-DD"
+const weekday   = getShortDay(todayDate);
+const todayStr  = getLocalDateKey(todayDate);
 
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
@@ -63,13 +64,18 @@ export default function Index() {
         AsyncStorage.getItem(TIMETABLE_KEY),
         AsyncStorage.getItem(PROGRESS_KEY),
       ]);
-      const loadedTimetable = data1 ? JSON.parse(data1) : {};
+      const parsedTimetable = data1 ? JSON.parse(data1) : {};
+      const loadedTimetable = parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable)
+        ? parsedTimetable : {};
       setTimetable(loadedTimetable);
 
-      const progress      = data2 ? JSON.parse(data2) : {};
+      const parsedProgress = data2 ? JSON.parse(data2) : {};
+      const progress = parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress)
+        ? parsedProgress : {};
       const todayProgress = progress[todayStr] || {};
-      const tasksForToday = Array.isArray(loadedTimetable[weekday])
-        ? loadedTimetable[weekday] : [];
+      const tasksForToday = (Array.isArray(loadedTimetable[weekday]) ? loadedTimetable[weekday] : [])
+        .filter((task) => !task.scheduledDate || task.scheduledDate === todayStr
+          || (Array.isArray(task.repeatDays) && task.repeatDays.includes(weekday)));
 
       const derived = tasksForToday.map((t) => {
         const p = todayProgress[t.id] || {};
@@ -108,6 +114,7 @@ export default function Index() {
         time:            newTask.time || '09:00 AM',
         durationMinutes: newTask.durationMinutes || 60,
         repeatDays:      [],    // today-only: no weekly repeat
+        scheduledDate:   todayStr,
         completed:       false,
         startedOnDate:   null,
         completedOnDate: null,
