@@ -14,7 +14,6 @@ export default function StatsRow({ tasks = [], selectedDate }) {
   const list = tasks.filter((t) => !t.date || t.date === selectedDate);
   const total = list.length;
   const done = list.filter((t) => t.completed).length;
-  const started = list.filter((t) => t.started && !t.completed).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   return (
@@ -26,22 +25,6 @@ export default function StatsRow({ tasks = [], selectedDate }) {
         </View>
         <View style={styles.progressIcon}>
           <Text style={styles.progressIconText}>{pct === 100 && total > 0 ? '✓' : '↗'}</Text>
-        </View>
-      </View>
-
-      {/* Top row: 3 stat pills */}
-      <View style={styles.statsRow}>
-        <View style={styles.statPill}>
-          <Text style={styles.statNum}>{total}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={[styles.statPill, styles.statPillAmber]}>
-          <Text style={[styles.statNum, { color: C.amber }]}>{started}</Text>
-          <Text style={[styles.statLabel, { color: C.amber }]}>In Progress</Text>
-        </View>
-        <View style={[styles.statPill, styles.statPillGreen]}>
-          <Text style={[styles.statNum, { color: C.green }]}>{done}</Text>
-          <Text style={[styles.statLabel, { color: C.green }]}>Done</Text>
         </View>
       </View>
 
@@ -63,8 +46,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: C.surface,
     marginHorizontal: S.lg,
-    marginTop: S.md,
-    marginBottom: S.sm,
+    marginTop: S.sm,
+    marginBottom: S.xs,
     borderRadius: R.lg,
     padding: S.lg,
     borderWidth: 1,
@@ -75,38 +58,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  cardHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.md },
+  cardHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
   cardEyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: C.textHint, marginBottom: 3 },
   cardTitle: { fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.4 },
   progressIcon: { width: 36, height: 36, borderRadius: R.md, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' },
   progressIconText: { color: C.primary, fontSize: 20, fontWeight: '800' },
-  statsRow: {
-    flexDirection: 'row',
-    gap: S.sm,
-    marginBottom: S.md,
-  },
-  statPill: {
-    flex: 1,
-    backgroundColor: C.bg,
-    borderRadius: R.sm,
-    paddingVertical: S.sm,
-    alignItems: 'center',
-  },
-  statPillAmber: { backgroundColor: C.amberBg },
-  statPillGreen: { backgroundColor: C.greenBg },
-  statNum: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: C.text,
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: C.textSub,
-    marginTop: 1,
-    letterSpacing: 0.3,
-  },
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
