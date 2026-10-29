@@ -45,14 +45,16 @@ export default function AddEditTaskModal({
   const toggleAll = () =>
     setRepeatDays(repeatDays.length === 7 ? [] : DAYS.map((d) => d.key));
 
+  const parsedDuration = Number.parseInt(duration, 10);
+  const isDurationError = submitted && (!duration.trim() || !Number.isFinite(parsedDuration) || parsedDuration < 1 || parsedDuration > 1440);
+
   const submit = () => {
     setSubmitted(true);
-    if (!title.trim()) return;
-    const parsed = parseInt(duration, 10);
+    if (!title.trim() || !duration.trim() || !Number.isFinite(parsedDuration) || parsedDuration < 1 || parsedDuration > 1440) return;
     const payload = {
       title:           title.trim(),
       time:            `${time} ${period}`,
-      durationMinutes: Number.isFinite(parsed) && parsed > 0 ? parsed : 60,
+      durationMinutes: parsedDuration,
       repeatDays:      fromHome ? [] : repeatDays, // no repeat when adding from Home
     };
     if (defaultDate) payload.date = defaultDate;
@@ -72,7 +74,7 @@ export default function AddEditTaskModal({
                   :               'Add Task';
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         {/* Stop press propagation so tapping inside sheet doesn't close */}
         <Pressable style={styles.sheet} onPress={() => {}}>
@@ -95,6 +97,7 @@ export default function AddEditTaskModal({
             <TextInput
               value={title}
               onChangeText={setTitle}
+              accessibilityLabel="Task name"
               style={[styles.input, isTitleError && styles.inputError]}
               placeholder="e.g. Morning Run"
               placeholderTextColor={C.textHint}
@@ -122,11 +125,14 @@ export default function AddEditTaskModal({
                 <TextInput
                   value={duration}
                   onChangeText={(v) => { if (/^\d*$/.test(v)) setDuration(v); }}
+                  accessibilityLabel="Duration in minutes"
                   keyboardType="numeric"
-                  style={styles.input}
+                  maxLength={4}
+                  style={[styles.input, isDurationError && styles.inputError]}
                   placeholder="60"
                   placeholderTextColor={C.textHint}
                 />
+                {isDurationError && <Text style={styles.errorMsg}>Enter 1–1440 minutes</Text>}
               </View>
             </View>
 
@@ -163,6 +169,9 @@ export default function AddEditTaskModal({
                       <Pressable
                         key={d.key}
                         onPress={() => toggleDay(d.key)}
+                        accessibilityRole="checkbox"
+                        accessibilityLabel={'Repeat on ' + d.key}
+                        accessibilityState={{ checked: active }}
                         style={[
                           styles.dayBtn,
                           active && styles.dayBtnActive,
@@ -180,6 +189,11 @@ export default function AddEditTaskModal({
                     );
                   })}
                 </View>
+                <Text style={styles.repeatHint}>
+                  {repeatDays.length === 0
+                    ? 'No days selected — this is a one-time task for the selected day.'
+                    : 'Repeats every ' + repeatDays.join(', ') + '.'}
+                </Text>
               </>
             )}
           </ScrollView>
@@ -274,6 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', marginTop: S.md, marginBottom: S.xs,
   },
   toggleAll: { fontSize: 13, fontWeight: '600', color: C.primary },
+  repeatHint: { fontSize: 12, color: C.textSub, lineHeight: 17, marginTop: S.sm },
   daysRow:   { flexDirection: 'row', gap: S.xs, marginTop: S.sm },
   dayBtn: {
     flex: 1, paddingVertical: S.sm, borderRadius: R.sm,
