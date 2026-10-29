@@ -5,7 +5,7 @@ import { C, S, R } from '../theme';
 const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_LABELS = { Mon: 'M', Tue: 'T', Wed: 'W', Thu: 'T', Fri: 'F', Sat: 'S', Sun: 'S' };
 
-export default function TaskRowTable({ item, onEdit, onDelete }) {
+export default function TaskRowTable({ item, onEdit, onDelete, hasTimeConflict = false }) {
   const hasRepeat = item?.repeatDays?.length > 0;
 
   return (
@@ -23,9 +23,16 @@ export default function TaskRowTable({ item, onEdit, onDelete }) {
 
       {/* Info */}
       <View style={styles.info}>
-        <Text numberOfLines={1} style={styles.title}>
-          {item?.title ?? 'Untitled Task'}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text numberOfLines={1} style={styles.title}>
+            {item?.title ?? 'Untitled Task'}
+          </Text>
+          {hasTimeConflict && (
+            <View style={styles.conflictBadge} accessibilityLabel="Time conflict">
+              <Text style={styles.conflictBadgeText}>Time conflict</Text>
+            </View>
+          )}
+        </View>
         <View style={styles.metaRow}>
           {item?.durationMinutes ? (
             <Text style={styles.duration}>⏱ {item.durationMinutes} min</Text>
@@ -127,11 +134,31 @@ const styles = StyleSheet.create({
     paddingVertical: S.md,
     paddingHorizontal: S.md,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: S.xs,
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
   title: {
+    flexShrink: 1,
     fontSize: 15,
     fontWeight: '600',
     color: C.text,
-    marginBottom: 4,
+  },
+  conflictBadge: {
+    backgroundColor: '#fff0d9',
+    borderColor: '#f4b860',
+    borderWidth: 1,
+    borderRadius: R.full,
+    paddingHorizontal: S.sm,
+    paddingVertical: 2,
+  },
+  conflictBadgeText: {
+    color: '#9a5800',
+    fontSize: 10,
+    fontWeight: '800',
   },
   metaRow: {
     flexDirection: 'row',
