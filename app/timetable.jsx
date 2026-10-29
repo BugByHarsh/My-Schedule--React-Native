@@ -104,7 +104,7 @@ export default function TimeTable() {
       WEEKDAYS.flatMap((day) => updated[day] || []).find((task) => task.id === updatedTask.id);
     const seriesId = originalTask?.seriesId || originalTask?.id || updatedTask.id;
     const isRecurring = Array.isArray(originalTask?.repeatDays) && originalTask.repeatDays.length > 0;
-    const belongsToSeries = (task) => (task.seriesId || task.id) === seriesId;
+    const belongsToSeries = (task) => String(task.seriesId || task.id) === String(seriesId);
 
     if (scope === 'this-day' && isRecurring) {
       const dayTasks = updated[activeDay] || [];
@@ -172,12 +172,12 @@ export default function TimeTable() {
     for (const day of WEEKDAYS) {
       if (updated[day]) {
         for (const t of updated[day]) {
-          if ((t.seriesId || t.id) === seriesId && t.notifId) {
+          if (String(t.seriesId || t.id) === String(seriesId) && t.notifId) {
             try { await cancelScheduled(t.notifId); }
             catch (error) { console.warn('Failed to cancel task notification', error); }
           }
         }
-        updated[day] = updated[day].filter((t) => (t.seriesId || t.id) !== seriesId);
+        updated[day] = updated[day].filter((t) => String(t.seriesId || t.id) !== String(seriesId));
       }
     }
     await saveTimetable(updated);
