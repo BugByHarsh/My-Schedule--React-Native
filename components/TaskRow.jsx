@@ -5,7 +5,7 @@ import { Target } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, S, R } from '../theme';
 
-export default function TaskRow({ item, onStart, onComplete, dark = false }) {
+export default function TaskRow({ item, onStart, onComplete }) {
   const router = useRouter();
   const [now, setNow] = useState(Date.now());
 
@@ -55,7 +55,7 @@ export default function TaskRow({ item, onStart, onComplete, dark = false }) {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, dark && styles.cardDark, pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onLongPress={() => {}} // allow long press feel
     >
       {/* Left colored status strip */}
@@ -68,25 +68,25 @@ export default function TaskRow({ item, onStart, onComplete, dark = false }) {
       </View>
 
       {/* Divider */}
-      <View style={[styles.divider, dark && styles.dividerDark]} />
+      <View style={styles.divider} />
 
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.topRow}>
           <Text
             numberOfLines={1}
-            style={[styles.title, dark && styles.titleDark, item.completed && styles.titleDone]}
+            style={[styles.title, item.completed && styles.titleDone]}
           >
             {item.title}
           </Text>
           {elapsedLabel && (
-            <View style={[styles.elapsedBadge, dark && styles.elapsedBadgeDark]}>
-              <Text style={[styles.elapsedText, dark && styles.elapsedTextDark]}>{elapsedLabel}</Text>
+            <View style={styles.elapsedBadge}>
+              <Text style={styles.elapsedText}>{elapsedLabel}</Text>
             </View>
           )}
         </View>
         <View style={styles.metaRow}>
-          <Text style={[styles.duration, dark && styles.durationDark]}>⏱ {item.durationMinutes} min</Text>
+          <Text style={styles.duration}>⏱ {item.durationMinutes} min</Text>
           {item.completed && <Text style={styles.doneChip}>✓ Done</Text>}
         </View>
       </View>
@@ -145,12 +145,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  cardDark: { backgroundColor: '#121a2e', borderColor: '#26324d', shadowOpacity: 0.16 },
-  dividerDark: { backgroundColor: '#26324d' },
-  titleDark: { color: '#f1f5ff' },
-  durationDark: { color: '#93a0bd' },
-  elapsedBadgeDark: { backgroundColor: '#3a2e1c' },
-  elapsedTextDark: { color: '#fbbf24' },
   cardPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   strip: {
     width: 4,
