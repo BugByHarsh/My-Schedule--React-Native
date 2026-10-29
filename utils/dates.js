@@ -49,17 +49,19 @@ export function normalizeTimetable(value, from = new Date()) {
 
     timetable[day] = rawTasks
       .filter((task) => {
-        const valid = task && typeof task === 'object' && typeof task.id === 'string';
+        const valid = task && typeof task === 'object' && task.id != null && (typeof task.id === 'string' || typeof task.id === 'number');
         if (!valid) changed = true;
         return valid;
       })
       .map((task) => {
         const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+        const normalizedTask = typeof task.id === 'number' ? { ...task, id: String(task.id) } : task;
+        if (typeof task.id === 'number') changed = true;
         if (repeatDays.length === 0 && !task.scheduledDate) {
           changed = true;
-          return { ...task, scheduledDate: getNextDateForShortDay(day, from) };
+          return { ...normalizedTask, scheduledDate: getNextDateForShortDay(day, from) };
         }
-        return task;
+        return normalizedTask;
       });
   }
 
