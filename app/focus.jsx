@@ -187,7 +187,6 @@ export default function FocusScreen() {
           {() => (
             <View style={styles.timerInner}>
               <Text
-                accessibilityRole="timer"
                 accessibilityLabel={`${minutes} minutes and ${seconds} seconds ${isFinished ? 'remaining' : running ? 'remaining' : 'paused'}`}
                 style={[styles.timerText, ringSize < 220 && styles.timerTextCompact]}
               >
