@@ -193,8 +193,8 @@ export default function Index() {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      <Header dark />
-      <StatsRow tasks={allTasks} selectedDate={todayStr} dark />
+      <Header />
+      <StatsRow tasks={allTasks} selectedDate={todayStr} />
 
       <View style={styles.taskSectionHeading}>
         <Text style={styles.taskSectionTitle}>Your tasks</Text>
@@ -211,15 +211,15 @@ export default function Index() {
               onPress={() => onTabChange(tab.key)}
               style={({ pressed }) => [
                 styles.tab,
-                isActive && { backgroundColor: '#252f50', borderColor: '#6474b9' },
+                isActive && { backgroundColor: tab.bg, borderColor: tab.color },
                 pressed && { opacity: 0.8 },
               ]}
             >
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+              <Text style={[styles.tabText, isActive && { color: tab.color }]}>
                 {tab.label}
               </Text>
-              <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
-                <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>
+              <View style={[styles.tabBadge, isActive && { backgroundColor: tab.color }]}>
+                <Text style={[styles.tabBadgeText, isActive && { color: '#fff' }]}>
                   {tabCounts[tab.key]}
                 </Text>
               </View>
@@ -267,7 +267,6 @@ export default function Index() {
               item={item}
               onStart={() => onStart(item)}
               onComplete={() => onComplete(item)}
-              dark
             />
           )}
           contentContainerStyle={styles.list}
@@ -294,17 +293,16 @@ export default function Index() {
         onSave={() => {}}   // editing never happens from Home
         editingTask={null}
         fromHome
-        dark
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0b1020' },
+  container: { flex: 1, backgroundColor: C.bg },
   taskSectionHeading: { paddingHorizontal: S.lg, paddingTop: S.sm, paddingBottom: S.xs },
-  taskSectionTitle: { fontSize: 17, fontWeight: '800', color: '#f1f5ff', letterSpacing: -0.2 },
-  taskSectionHint: { fontSize: 12, color: '#93a0bd', marginTop: 3 },
+  taskSectionTitle: { fontSize: 17, fontWeight: '800', color: C.text, letterSpacing: -0.2 },
+  taskSectionHint: { fontSize: 12, color: C.textSub, marginTop: 3 },
   tabsWrap: {
     flexDirection: 'row',
     paddingHorizontal: S.lg,
@@ -320,21 +318,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: S.sm,
     borderRadius: R.full,
     borderWidth: 1.5,
-    borderColor: '#26324d',
-    backgroundColor: '#121a2e',
+    borderColor: C.border2,
+    backgroundColor: C.surface,
     gap: S.xs,
   },
   tabText:      { fontSize: 12, fontWeight: '700', color: '#93a0bd', letterSpacing: 0.1 },
-  tabTextActive: { color: '#c7d2fe' },
   tabBadge: {
     minWidth: 18, height: 18,
     borderRadius: R.full,
-    backgroundColor: '#26324d',
+    backgroundColor: C.border,
     alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 4,
   },
   tabBadgeText: { fontSize: 10, fontWeight: '800', color: '#aab5d0' },
-  tabBadgeActive: { backgroundColor: '#4f46e5' },
+  tabBadgeActive: { backgroundColor: C.primary },
   tabBadgeTextActive: { color: '#fff' },
   list:         { paddingHorizontal: S.lg, paddingBottom: 90 },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -366,7 +363,7 @@ const styles = StyleSheet.create({
     width: 56, height: 56, borderRadius: 28,
     backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#6366f1',
+    shadowColor: C.primary,
     shadowOpacity: 0.45, shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
