@@ -58,6 +58,8 @@ export default function AddEditTaskModal({
       time:            `${time} ${period}`,
       durationMinutes: parsedDuration,
       repeatDays:      fromHome ? [] : repeatDays, // no repeat when adding from Home
+      // Preserve the edited occurrence identity for one-off edits and series rejoining.
+      id: editingTask?.id,
     };
     if (defaultDate) payload.date = defaultDate;
     if (editingTask) {
