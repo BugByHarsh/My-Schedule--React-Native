@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import Header from '../components/Header';
@@ -99,6 +99,19 @@ export default function CalendarScreen() {
       />
 
       <View style={styles.content}>
+        <View style={styles.calendarActions}>
+          <Text style={styles.calendarHint}>Select a day to review your schedule</Text>
+          {!isToday && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Jump to today"
+              onPress={() => setSelectedDate(todayStr)}
+              style={({ pressed }) => [styles.todayButton, pressed && { opacity: 0.75 }]}
+            >
+              <Text style={styles.todayButtonText}>Today</Text>
+            </Pressable>
+          )}
+        </View>
         {/* Summary card */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryTop}>
@@ -203,6 +216,10 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
   content: { flex: 1, paddingHorizontal: S.lg, paddingTop: S.md },
+  calendarActions: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
+  calendarHint: { fontSize: 12, color: C.textSub, flex: 1 },
+  todayButton: { backgroundColor: C.primaryLight, borderRadius: R.full, paddingHorizontal: S.md, paddingVertical: S.sm, marginLeft: S.sm },
+  todayButtonText: { fontSize: 12, fontWeight: '800', color: C.primary },
   summaryCard: {
     backgroundColor: C.surface,
     borderRadius: R.lg,
