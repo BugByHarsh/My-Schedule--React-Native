@@ -1,9 +1,22 @@
 import { Tabs } from 'expo-router';
-import { View, Platform } from 'react-native';
+import { View, Platform, Pressable } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, CalendarDays, Info, Timer, CalendarClock } from 'lucide-react-native';
 import { C } from '../theme';
+
+function SmoothTabButton(props) {
+  return (
+    <Pressable
+      {...props}
+      android_ripple={{ color: 'transparent' }}
+      style={({ pressed }) => [
+        props.style,
+        { opacity: pressed ? 0.76 : 1 },
+      ]}
+    />
+  );
+}
 
 export default function Layout() {
   const insets = useSafeAreaInsets();
@@ -14,6 +27,11 @@ export default function Layout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          lazy: true,
+          freezeOnBlur: true,
+          animation: 'none',
+          tabBarButton: (props) => <SmoothTabButton {...props} />,
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: C.primary,
           tabBarInactiveTintColor: C.textHint,
           tabBarStyle: {
