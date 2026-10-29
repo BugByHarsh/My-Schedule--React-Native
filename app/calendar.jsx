@@ -15,6 +15,25 @@ function getShortDayLocal(dateString) {
   return getShortDay(parseLocalDateKey(dateString));
 }
 
+// Older task records don't have an explicit creation date, but their series IDs
+// were generated from Date.now(). Use that timestamp to avoid marking dates
+// before a task existed as missed.
+function getTaskCreatedDate(task) {
+  if (typeof task.createdDate === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(task.createdDate)) {
+    return task.createdDate;
+  }
+  const rawId = String(task.seriesId || task.id || '');
+  const timestampMatch = rawId.match(/^\\d{13}(?:-|$)/);
+  if (!timestampMatch) return null;
+  const created = new Date(Number(timestampMatch[0].replace(/-$/, '')));
+  return Number.isNaN(created.getTime()) ? null : getLocalDateKey(created);
+}
+
+function taskExistedOnDate(task, dateString) {
+  const createdDate = getTaskCreatedDate(task);
+  return !createdDate || dateString >= createdDate;
+}
+
 function toMin(s) {
   if (!s) return 0;
   const [time, period] = s.trim().split(' ');
@@ -58,7 +77,7 @@ export default function CalendarScreen() {
     const shortDay = getShortDayLocal(selectedDate);
     const base = (Array.isArray(timetable[shortDay]) ? timetable[shortDay] : []).filter((task) => {
       const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
-      if (repeatDays.length > 0) return repeatDays.includes(shortDay);
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, selectedDate);
       if (task.scheduledDate) return task.scheduledDate === selectedDate;
       // Preserve legacy tasks created before date-specific one-off dates were stored.
       return true;
@@ -103,7 +122,7 @@ export default function CalendarScreen() {
     const tasksForDay = Array.isArray(timetable[shortDay]) ? timetable[shortDay] : [];
     const hasTasks = tasksForDay.some((task) => {
       const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
-      if (repeatDays.length > 0) return repeatDays.includes(shortDay);
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, dateKey);
       if (task.scheduledDate) return task.scheduledDate === dateKey;
       // Legacy tasks without a stored date retain their previous compatibility behavior.
       return true;
