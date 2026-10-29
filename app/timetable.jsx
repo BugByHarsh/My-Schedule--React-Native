@@ -317,6 +317,11 @@ export default function TimeTable() {
           <View style={[styles.rowWrap, isActive && styles.rowWrapActive]}>
             <TaskRowTable
               item={item}
+              hasTimeConflict={currentTasks.some(
+                (other) =>
+                  String(other.id) !== String(item.id) &&
+                  toMin(other.time) === toMin(item.time)
+              )}
               onEdit={() => { setEditingTask(item); setModalVisible(true); }}
               onDelete={() => onDelete(item)}
             />
