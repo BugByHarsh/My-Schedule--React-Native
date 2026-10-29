@@ -110,13 +110,21 @@ export default function TimeTable() {
       const dayTasks = updated[activeDay] || [];
       const occurrence = dayTasks.find((task) => task.id === updatedTask.id);
       if (occurrence?.notifId) await cancelScheduled(occurrence.notifId);
-      updated[activeDay] = dayTasks.map((task) => task.id !== updatedTask.id ? task : ({
+      // Remove this weekday from the remaining recurring series, so its day
+      // indicators accurately reflect the weekdays that still repeat.
+      const remainingDays = (originalTask.repeatDays || []).filter((day) => day !== activeDay);
+      for (const day of WEEKDAYS) {
+        updated[day] = (updated[day] || []).map((task) =>
+          belongsToSeries(task) ? { ...task, repeatDays: remainingDays } : task
+        );
+      }
+      const dayTasksAfterSeriesUpdate = updated[activeDay] || [];
+      updated[activeDay] = dayTasksAfterSeriesUpdate.map((task) => task.id !== updatedTask.id ? task : ({
         ...task,
         title: updatedTask.title,
         time: updatedTask.time,
         durationMinutes: updatedTask.durationMinutes,
-        // "Just this day" detaches this occurrence from its repeating series.
-        // A detached task must not retain the old weekdays or series ID.
+        // This occurrence is now independent of the repeating series.
         repeatDays: [],
         seriesId: task.id,
         scheduledDate: task.scheduledDate || getNextDateForShortDay(activeDay),
@@ -125,6 +133,52 @@ export default function TimeTable() {
       saveTimetable(updated);
       setEditingTask(null);
       return;
+    }
+
+    // A detached one-off task can rejoin a recurring series when its title and
+    // time exactly match that series. Add the current weekday back to the series.
+    if (!isRecurring && scope === 'all-days') {
+      const normalizedTitle = (updatedTask.title || '').trim().toLocaleLowerCase();
+      const matchingOccurrence = WEEKDAYS
+        .filter((day) => day !== activeDay)
+        .flatMap((day) => updated[day] || [])
+        .find((task) =>
+          Array.isArray(task.repeatDays) &&
+          task.repeatDays.length > 0 &&
+          (task.title || '').trim().toLocaleLowerCase() === normalizedTitle &&
+          task.time === updatedTask.time
+        );
+
+      if (matchingOccurrence) {
+        const matchingSeriesId = matchingOccurrence.seriesId || matchingOccurrence.id;
+        const mergedDays = [...new Set([...(matchingOccurrence.repeatDays || []), activeDay])]
+          .filter((day) => WEEKDAYS.includes(day));
+        for (const day of WEEKDAYS) {
+          updated[day] = (updated[day] || []).map((task) =>
+            String(task.seriesId || task.id) === String(matchingSeriesId)
+              ? { ...task, repeatDays: mergedDays }
+              : task
+          );
+        }
+        updated[activeDay] = (updated[activeDay] || []).filter((task) => String(task.id) !== String(updatedTask.id));
+        const existingOnDay = (updated[activeDay] || []).some(
+          (task) => String(task.seriesId || task.id) === String(matchingSeriesId)
+        );
+        if (!existingOnDay) {
+          updated[activeDay] = [...(updated[activeDay] || []), {
+            ...matchingOccurrence,
+            ...updatedTask,
+            id: updatedTask.id,
+            seriesId: matchingSeriesId,
+            repeatDays: mergedDays,
+            scheduledDate: null,
+            notifId: null,
+          }];
+        }
+        saveTimetable(updated);
+        setEditingTask(null);
+        return;
+      }
     }
 
     for (const day of WEEKDAYS) {
