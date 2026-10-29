@@ -348,6 +348,9 @@ export default function TimeTable() {
     keyExtractor: (item) => item.id,
     renderItem,
     contentContainerStyle: styles.list,
+    initialNumToRender: 8,
+    maxToRenderPerBatch: 8,
+    windowSize: 7,
     ListEmptyComponent: () => (
       <View style={styles.empty}>
         <Text style={styles.emptyIcon}>🗓️</Text>
