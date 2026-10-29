@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import { C, S, R } from '../theme';
-import { getLocalDateKey, getShortDay, parseLocalDateKey } from '../utils/dates';
+import { getLocalDateKey, getShortDay, parseLocalDateKey, normalizeTimetable } from '../utils/dates';
 
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY = '@TASK_PROGRESS_v1';
@@ -43,7 +43,9 @@ export default function CalendarScreen() {
       ]);
       const parsedTimetable = d1 ? JSON.parse(d1) : {};
       const parsedProgress = d2 ? JSON.parse(d2) : {};
-      setTimetable(parsedTimetable && typeof parsedTimetable === 'object' && !Array.isArray(parsedTimetable) ? parsedTimetable : {});
+      const normalized = normalizeTimetable(parsedTimetable);
+      if (normalized.changed) await AsyncStorage.setItem(TIMETABLE_KEY, JSON.stringify(normalized.timetable));
+      setTimetable(normalized.timetable);
       setProgress(parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress) ? parsedProgress : {});
     } catch (e) {
       console.warn('Error loading data', e);
