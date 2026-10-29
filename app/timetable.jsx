@@ -168,6 +168,8 @@ export default function TimeTable() {
           updated[activeDay] = [...(updated[activeDay] || []), {
             ...matchingOccurrence,
             ...updatedTask,
+            // Keep the existing series' canonical casing when a detached task rejoins.
+            title: matchingOccurrence.title,
             id: updatedTask.id,
             seriesId: matchingSeriesId,
             repeatDays: mergedDays,
@@ -267,6 +269,7 @@ export default function TimeTable() {
         <View style={styles.rowWrap}>
           <TaskRowTable
             item={item}
+            hasTimeConflict={currentTasks.some((other) => String(other.id) !== String(item.id) && toMin(other.time) === toMin(item.time))}
             onEdit={() => { setEditingTask(item); setModalVisible(true); }}
             onDelete={() => onDelete(item)}
           />
