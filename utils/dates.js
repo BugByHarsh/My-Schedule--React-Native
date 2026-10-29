@@ -27,3 +27,42 @@ export function getNextDateForShortDay(shortDay, from = new Date()) {
   result.setDate(result.getDate() + daysAhead);
   return getLocalDateKey(result);
 }
+
+
+// Validate persisted timetable data and migrate legacy one-off tasks that lack a
+// date. Without this migration, old one-off tasks could appear on every date.
+export function normalizeTimetable(value, from = new Date()) {
+  const validDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { timetable: {}, changed: value != null };
+  }
+
+  const timetable = {};
+  let changed = false;
+  for (const day of validDays) {
+    const rawTasks = value[day];
+    if (!Array.isArray(rawTasks)) {
+      timetable[day] = [];
+      if (rawTasks !== undefined) changed = true;
+      continue;
+    }
+
+    timetable[day] = rawTasks
+      .filter((task) => {
+        const valid = task && typeof task === 'object' && typeof task.id === 'string';
+        if (!valid) changed = true;
+        return valid;
+      })
+      .map((task) => {
+        const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+        if (repeatDays.length === 0 && !task.scheduledDate) {
+          changed = true;
+          return { ...task, scheduledDate: getNextDateForShortDay(day, from) };
+        }
+        return task;
+      });
+  }
+
+  if (Object.keys(value).some((day) => !validDays.includes(day))) changed = true;
+  return { timetable, changed };
+}
