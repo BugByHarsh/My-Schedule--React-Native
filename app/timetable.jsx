@@ -217,26 +217,55 @@ export default function TimeTable() {
   };
 
   // ─── Delete ────────────────────────────────────────────────────────────────
-  const onDelete = (task) => setPendingDelete(task);
+  const onDelete = async (task) => {
+    const isRecurring = Array.isArray(task.repeatDays) && task.repeatDays.length > 0;
+    // One-off tasks are deleted immediately; only recurring tasks need a scope choice.
+    if (!isRecurring) {
+      await deleteTask(task, activeDay, 'this-day');
+      return;
+    }
+    setPendingDelete({ task, day: activeDay });
+  };
 
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    const taskToDelete = pendingDelete;
-    setPendingDelete(null);
+  const deleteTask = async (taskToDelete, occurrenceDay, scope) => {
     const updated = { ...timetable };
     const seriesId = taskToDelete.seriesId || taskToDelete.id;
-    for (const day of WEEKDAYS) {
-      if (updated[day]) {
-        for (const t of updated[day]) {
-          if (String(t.seriesId || t.id) === String(seriesId) && t.notifId) {
-            try { await cancelScheduled(t.notifId); }
+    const belongsToSeries = (task) => String(task.seriesId || task.id) === String(seriesId);
+
+    if (scope === 'this-day') {
+      const removed = (updated[occurrenceDay] || []).filter(belongsToSeries);
+      for (const task of removed) {
+        if (task.notifId) {
+          try { await cancelScheduled(task.notifId); }
+          catch (error) { console.warn('Failed to cancel task notification', error); }
+        }
+      }
+      updated[occurrenceDay] = (updated[occurrenceDay] || []).filter((task) => !belongsToSeries(task));
+      const remainingDays = (taskToDelete.repeatDays || []).filter((day) => day !== occurrenceDay);
+      for (const day of WEEKDAYS) {
+        updated[day] = (updated[day] || []).map((task) =>
+          belongsToSeries(task) ? { ...task, repeatDays: remainingDays } : task
+        );
+      }
+    } else {
+      for (const day of WEEKDAYS) {
+        for (const task of updated[day] || []) {
+          if (belongsToSeries(task) && task.notifId) {
+            try { await cancelScheduled(task.notifId); }
             catch (error) { console.warn('Failed to cancel task notification', error); }
           }
         }
-        updated[day] = updated[day].filter((t) => String(t.seriesId || t.id) !== String(seriesId));
+        updated[day] = (updated[day] || []).filter((task) => !belongsToSeries(task));
       }
     }
     await saveTimetable(updated);
+  };
+
+  const confirmDelete = async (scope) => {
+    if (!pendingDelete) return;
+    const { task, day } = pendingDelete;
+    setPendingDelete(null);
+    await deleteTask(task, day, scope);
   };
 
   // ─── Drag to reorder ───────────────────────────────────────────────────────
@@ -409,11 +438,11 @@ export default function TimeTable() {
               <Text style={styles.deleteTitle}>Delete task?</Text>
               <Text style={styles.deleteMessage}>
                 {pendingDelete
-                  ? `Remove "${pendingDelete.title}" from all days?`
+                  ? `"${pendingDelete.task.title}" repeats on multiple days. Where should it be deleted?`
                   : ''}
               </Text>
               <Text style={styles.deleteHint}>
-                If this task repeats, all occurrences in its series will be removed.
+                Delete only this day's occurrence, or remove the entire repeating series.
               </Text>
               <View style={styles.deleteActions}>
                 <Pressable
@@ -425,10 +454,17 @@ export default function TimeTable() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  onPress={confirmDelete}
+                  onPress={() => confirmDelete('this-day')}
+                  style={({ pressed }) => [styles.deleteCancelButton, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.deleteCancelText}>Just today</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => confirmDelete('all-days')}
                   style={({ pressed }) => [styles.deleteConfirmButton, pressed && { opacity: 0.8 }]}
                 >
-                  <Text style={styles.deleteConfirmText}>Delete</Text>
+                  <Text style={styles.deleteConfirmText}>Every day</Text>
                 </Pressable>
               </View>
             </View>
