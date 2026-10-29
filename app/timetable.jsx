@@ -92,8 +92,15 @@ export default function TimeTable() {
   };
 
   // ─── Edit ──────────────────────────────────────────────────────────────────
-  const onEditSave = (updatedTask) => {
+  const onEditSave = async (updatedTask) => {
     const updated    = { ...timetable };
+    // Editing time/title invalidates any already-scheduled reminder for this task.
+    for (const day of WEEKDAYS) {
+      for (const task of updated[day] || []) {
+        if (task.id === updatedTask.id && task.notifId) await cancelScheduled(task.notifId);
+      }
+    }
+    updatedTask = { ...updatedTask, notifId: null };
     const repeatDays = updatedTask.repeatDays?.length
       ? updatedTask.repeatDays : [activeDay];
 
