@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, CalendarDays, Info, Timer, CalendarClock } from 'lucide-react-native';
 import { C } from '../theme';
@@ -8,7 +9,8 @@ export default function Layout() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.surface }}>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <StatusBar style="dark" backgroundColor={C.bg} translucent={false} />
       <Tabs
         screenOptions={{
           headerShown: false,
@@ -18,10 +20,9 @@ export default function Layout() {
             backgroundColor: C.surface,
             borderTopWidth: 1,
             borderTopColor: C.border,
-            height: Platform.OS === 'ios' ? 84 : 64 + insets.bottom,
+            height: Platform.OS === 'ios' ? 84 : 60 + Math.max(insets.bottom, 0),
             paddingBottom: Platform.OS === 'ios' ? 24 : Math.max(insets.bottom, 8),
-            paddingTop: 8,
-            // Subtle top shadow
+            paddingTop: 7,
             shadowColor: '#000',
             shadowOpacity: 0.06,
             shadowRadius: 12,
@@ -42,7 +43,7 @@ export default function Layout() {
           name="index"
           options={{
             title: 'Home',
-            tabBarIcon: ({ color, size }) => <Home color={color} size={22} strokeWidth={2} />,
+            tabBarIcon: ({ color }) => <Home color={color} size={22} strokeWidth={2} />,
           }}
         />
         <Tabs.Screen
