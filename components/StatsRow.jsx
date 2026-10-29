@@ -19,6 +19,16 @@ export default function StatsRow({ tasks = [], selectedDate }) {
 
   return (
     <View style={styles.card}>
+      <View style={styles.cardHeading}>
+        <View>
+          <Text style={styles.cardEyebrow}>DAILY PROGRESS</Text>
+          <Text style={styles.cardTitle}>{pct}% completed</Text>
+        </View>
+        <View style={styles.progressIcon}>
+          <Text style={styles.progressIconText}>{pct === 100 && total > 0 ? '✓' : '↗'}</Text>
+        </View>
+      </View>
+
       {/* Top row: 3 stat pills */}
       <View style={styles.statsRow}>
         <View style={styles.statPill}>
@@ -65,6 +75,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
+  cardHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.md },
+  cardEyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: C.textHint, marginBottom: 3 },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.4 },
+  progressIcon: { width: 36, height: 36, borderRadius: R.md, backgroundColor: C.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  progressIconText: { color: C.primary, fontSize: 20, fontWeight: '800' },
   statsRow: {
     flexDirection: 'row',
     gap: S.sm,
