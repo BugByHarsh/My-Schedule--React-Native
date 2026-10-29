@@ -63,7 +63,15 @@ export default function AddEditTaskModal({
     };
     if (defaultDate) payload.date = defaultDate;
     if (editingTask) {
-      if (Array.isArray(editingTask.repeatDays) && editingTask.repeatDays.length > 0) {
+      const isRecurring = Array.isArray(editingTask.repeatDays) && editingTask.repeatDays.length > 0;
+      const taskDetailsChanged =
+        payload.title !== (editingTask.title || '').trim() ||
+        payload.time !== (editingTask.time || '09:00 AM') ||
+        payload.durationMinutes !== (editingTask.durationMinutes || 60);
+
+      // Ask for scope only when changing the task details of a recurring task.
+      // Editing the repeat-day selection alone should apply directly.
+      if (isRecurring && taskDetailsChanged) {
         setScopePromptVisible(true);
         return;
       }
