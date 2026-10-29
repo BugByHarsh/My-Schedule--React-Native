@@ -39,6 +39,7 @@ function toMin(s) {
 export default function TimeTable() {
   const todayKey = getTodayKey();
   const [timetable,    setTimetable]    = useState({});
+  const [dataReady,    setDataReady]    = useState(false);
   const [activeDay,    setActiveDay]    = useState(todayKey);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask,  setEditingTask]  = useState(null);
@@ -54,13 +55,17 @@ export default function TimeTable() {
     } catch (e) { console.warn('Failed to save timetable', e); }
   }, []);
 
-  useDailyNotifications(timetable, saveTimetable);
+  useDailyNotifications(timetable, saveTimetable, dataReady);
 
   const loadTimetable = async () => {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEY);
-      setTimetable(data ? JSON.parse(data) : {});
-    } catch (e) { console.warn('Failed to load timetable', e); }
+      const parsed = data ? JSON.parse(data) : {};
+      const normalized = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+      Object.keys(normalized).forEach((day) => { if (!Array.isArray(normalized[day])) normalized[day] = []; });
+      setTimetable(normalized);
+    } catch (e) { console.warn('Failed to load timetable', e); setTimetable({}); }
+    finally { setDataReady(true); }
   };
 
   // ─── Add ───────────────────────────────────────────────────────────────────
