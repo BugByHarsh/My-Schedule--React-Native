@@ -39,6 +39,21 @@ export default function Layout() {
           name="index"
           options={{
             title: 'Home',
+            tabBarActiveTintColor: '#a5b4fc',
+            tabBarInactiveTintColor: '#8390b2',
+            tabBarStyle: {
+              backgroundColor: '#0b1020',
+              borderTopWidth: 1,
+              borderTopColor: '#26324d',
+              height: Platform.OS === 'ios' ? 84 : 64,
+              paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+              paddingTop: 8,
+              shadowColor: '#000',
+              shadowOpacity: 0.2,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: -2 },
+              elevation: 12,
+            },
             tabBarIcon: ({ color, size }) => <Home color={color} size={22} strokeWidth={2} />,
           }}
         />
