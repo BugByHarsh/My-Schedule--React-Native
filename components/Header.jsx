@@ -8,20 +8,20 @@ function getGreeting() {
   return 'Good evening 🌙';
 }
 
-export default function Header() {
+export default function Header({ dark = false }) {
   const today = new Date();
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, dark && styles.headerDark]}>
       <View>
-        <Text style={styles.greeting}>{getGreeting()}</Text>
-        <Text style={[styles.title, styles.homeTitle]}>"Make today count"</Text>
+        <Text style={[styles.greeting, dark && styles.greetingDark]}>{getGreeting()}</Text>
+        <Text style={[styles.title, styles.homeTitle, dark && styles.titleDark]}>Make today count</Text>
       </View>
-      <View style={styles.dateBadge}>
-        <Text style={styles.dateWeekday}>
+      <View style={[styles.dateBadge, dark && styles.dateBadgeDark]}>
+        <Text style={[styles.dateWeekday, dark && styles.dateTextDark]}>
           {today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
         </Text>
-        <Text style={styles.dateNum}>{today.getDate()}</Text>
-        <Text style={styles.dateMon}>
+        <Text style={[styles.dateNum, dark && styles.dateTextDark]}>{today.getDate()}</Text>
+        <Text style={[styles.dateMon, dark && styles.dateTextDark]}>
           {today.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
         </Text>
       </View>
@@ -39,8 +39,13 @@ const styles = StyleSheet.create({
     paddingBottom: S.md,
     backgroundColor: C.bg,
     paddingTop: S.lg,
-    paddingBottom: S.sm,
+    paddingBottom: S.md,
   },
+  headerDark: { backgroundColor: '#0b1020' },
+  greetingDark: { color: '#9ca9c8' },
+  titleDark: { color: '#a5b4fc' },
+  dateBadgeDark: { backgroundColor: '#202947', borderWidth: 1, borderColor: '#303b61' },
+  dateTextDark: { color: '#c7d2fe' },
   greeting: {
     fontSize: 12,
     color: C.textSub,
