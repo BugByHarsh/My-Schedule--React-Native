@@ -19,11 +19,11 @@ function getShortDayLocal(dateString) {
 // were generated from Date.now(). Use that timestamp to avoid marking dates
 // before a task existed as missed.
 function getTaskCreatedDate(task) {
-  if (typeof task.createdDate === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(task.createdDate)) {
+  if (typeof task.createdDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(task.createdDate)) {
     return task.createdDate;
   }
   const rawId = String(task.seriesId || task.id || '');
-  const timestampMatch = rawId.match(/^\\d{13}(?:-|$)/);
+  const timestampMatch = rawId.match(/^\d{13}(?:-|$)/);
   if (!timestampMatch) return null;
   const created = new Date(Number(timestampMatch[0].replace(/-$/, '')));
   return Number.isNaN(created.getTime()) ? null : getLocalDateKey(created);
