@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, TouchableOpacity, FlatList, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -287,7 +287,7 @@ export default function TimeTable() {
 
   // The displayed list: use stored order (already persisted from last drag).
   // On first load (no drag yet), sort by time as before.
-  const currentTasks = (() => {
+  const currentTasks = useMemo(() => {
     const raw = timetable[activeDay] || [];
     // If user has never reordered, sort by time. Once they drag, the stored
     // array reflects their custom order and we show it as-is.
@@ -296,7 +296,18 @@ export default function TimeTable() {
     const sortedByTime = [...raw].sort((a, b) => toMin(a.time) - toMin(b.time));
     const isSortedByTime = raw.every((t, i) => t.id === sortedByTime[i]?.id);
     return isSortedByTime ? sortedByTime : raw;
-  })();
+  }, [timetable, activeDay]);
+
+  // Build conflict counts once per task-list change instead of scanning the
+  // whole list for every rendered row (quadratic work on larger schedules).
+  const timeConflictCounts = useMemo(() => {
+    const counts = new Map();
+    currentTasks.forEach((task) => {
+      const minute = toMin(task.time);
+      counts.set(minute, (counts.get(minute) || 0) + 1);
+    });
+    return counts;
+  }, [currentTasks]);
 
   // ─── Render row ────────────────────────────────────────────────────────────
   // On web: plain row, no drag handle (DraggableFlatList not supported on web)
@@ -306,7 +317,7 @@ export default function TimeTable() {
         <View style={styles.rowWrap}>
           <TaskRowTable
             item={item}
-            hasTimeConflict={currentTasks.some((other) => String(other.id) !== String(item.id) && toMin(other.time) === toMin(item.time))}
+            hasTimeConflict={(timeConflictCounts.get(toMin(item.time)) || 0) > 1}
             onEdit={() => { setEditingTask(item); setModalVisible(true); }}
             onDelete={() => onDelete(item)}
           />
@@ -317,11 +328,7 @@ export default function TimeTable() {
           <View style={[styles.rowWrap, isActive && styles.rowWrapActive]}>
             <TaskRowTable
               item={item}
-              hasTimeConflict={currentTasks.some(
-                (other) =>
-                  String(other.id) !== String(item.id) &&
-                  toMin(other.time) === toMin(item.time)
-              )}
+              hasTimeConflict={(timeConflictCounts.get(toMin(item.time)) || 0) > 1}
               onEdit={() => { setEditingTask(item); setModalVisible(true); }}
               onDelete={() => onDelete(item)}
             />
