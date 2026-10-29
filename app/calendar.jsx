@@ -63,7 +63,7 @@ export default function CalendarScreen() {
     });
     const daily = progress[selectedDate] || {};
     const merged = base.map((task) => {
-      const p = daily[task.id] || {};
+      const p = daily[task.id] || (task.seriesId ? daily[task.seriesId] : null) || {};
       return { ...task, completed: !!p.completed, started: !!p.started };
     });
     merged.sort((a, b) => toMin(a.time) - toMin(b.time));
