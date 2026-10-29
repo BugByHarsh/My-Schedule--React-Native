@@ -1,12 +1,14 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Vibration, Alert, StatusBar } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Vibration, Alert, StatusBar, AppState, useWindowDimensions } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { C, S, R } from '../theme';
 
 export default function FocusScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const ringSize = Math.max(180, Math.min(260, width - 64, height * 0.36));
   const [duration, setDuration] = useState(null);
   const [remaining, setRemaining] = useState(null);
   const [running, setRunning] = useState(false);
@@ -77,7 +79,13 @@ export default function FocusScreen() {
     const tick = () => setRemaining(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
     tick();
     const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') tick();
+    });
+    return () => {
+      clearInterval(timer);
+      subscription.remove();
+    };
   }, [running, endsAt]);
 
   useEffect(() => {
@@ -169,7 +177,7 @@ export default function FocusScreen() {
       {/* Timer ring */}
       <View style={styles.ringWrap}>
         <AnimatedCircularProgress
-          size={260}
+          size={ringSize}
           width={12}
           fill={fillPct}
           tintColor={isFinished ? '#34d399' : '#818cf8'}
@@ -178,7 +186,11 @@ export default function FocusScreen() {
         >
           {() => (
             <View style={styles.timerInner}>
-              <Text style={styles.timerText}>
+              <Text
+                accessibilityRole="timer"
+                accessibilityLabel={`${minutes} minutes and ${seconds} seconds ${isFinished ? 'remaining' : running ? 'remaining' : 'paused'}`}
+                style={[styles.timerText, ringSize < 220 && styles.timerTextCompact]}
+              >
                 {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
               </Text>
               <Text style={styles.timerSub}>
@@ -200,6 +212,8 @@ export default function FocusScreen() {
             running ? styles.pauseBtn : styles.resumeBtn,
             pressed && { opacity: 0.85 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={running ? 'Pause focus session' : 'Resume focus session'}
           onPress={toggleRunning}
         >
           <Text style={styles.primaryBtnText}>
@@ -210,15 +224,24 @@ export default function FocusScreen() {
 
       {/* Exit — secondary, less prominent */}
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Exit focus session"
         style={({ pressed }) => [styles.exitBtn, pressed && { opacity: 0.6 }]}
-        onPress={async () => {
-          try {
-            await AsyncStorage.removeItem('@Focus_Duration');
-          } catch (e) {
-            console.warn('Failed to clear focus session', e);
-          }
-          router.back();
-        }}
+        onPress={() => Alert.alert(
+          'Exit focus session?',
+          'Your current timer will be cleared and cannot be resumed.',
+          [
+            { text: 'Keep focusing', style: 'cancel' },
+            { text: 'Exit session', style: 'destructive', onPress: async () => {
+              try {
+                await AsyncStorage.removeItem('@Focus_Duration');
+              } catch (e) {
+                console.warn('Failed to clear focus session', e);
+              }
+              router.back();
+            } },
+          ]
+        )}
       >
         <Text style={styles.exitBtnText}>Exit Session</Text>
       </Pressable>
@@ -262,6 +285,7 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     letterSpacing: -2,
   },
+  timerTextCompact: { fontSize: 42 },
   timerSub: {
     fontSize: 13,
     color: 'rgba(199,210,254,0.7)',
