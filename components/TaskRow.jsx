@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Target } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, S, R } from '../theme';
 
@@ -91,6 +92,8 @@ export default function TaskRow({ item, onStart, onComplete }) {
       <View style={styles.actions}>
         {status === 'pending' && (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Start ${item.title}`}
             style={({ pressed }) => [styles.btn, styles.btnStart, pressed && styles.btnPressed]}
             onPress={() => onStart(item)}
           >
@@ -101,12 +104,16 @@ export default function TaskRow({ item, onStart, onComplete }) {
         {status === 'started' && (
           <>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Start focus session for ${item.title}`}
               style={({ pressed }) => [styles.iconBtn, styles.iconBtnFocus, pressed && styles.btnPressed]}
               onPress={onFocus}
             >
-              <Text style={styles.iconBtnText}>🎯</Text>
+              <Target size={18} color={C.primary} />
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Mark ${item.title} as done`}
               style={({ pressed }) => [styles.btn, styles.btnDone, pressed && styles.btnPressed]}
               onPress={() => onComplete(item)}
             >
