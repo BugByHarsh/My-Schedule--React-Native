@@ -55,8 +55,14 @@ export function normalizeTimetable(value, from = new Date()) {
       })
       .map((task) => {
         const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
-        const normalizedTask = typeof task.id === 'number' ? { ...task, id: String(task.id) } : task;
-        if (typeof task.id === 'number') changed = true;
+        const needsIdNormalization = typeof task.id === 'number';
+        const needsSeriesNormalization = task.seriesId != null && typeof task.seriesId !== 'string';
+        const normalizedTask = {
+          ...task,
+          ...(needsIdNormalization ? { id: String(task.id) } : {}),
+          ...(needsSeriesNormalization ? { seriesId: String(task.seriesId) } : {}),
+        };
+        if (needsIdNormalization || needsSeriesNormalization) changed = true;
         if (repeatDays.length === 0 && !task.scheduledDate) {
           changed = true;
           return { ...normalizedTask, scheduledDate: getNextDateForShortDay(day, from) };
