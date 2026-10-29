@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Header from '../components/Header';
 import { C, S, R } from '../theme';
 
 const FEATURES = [
@@ -13,8 +12,12 @@ const FEATURES = [
 
 export default function About() {
   return (
-    <SafeAreaView style={styles.container}>
-      <Header />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.pageHeader}>
+        <Text style={styles.pageEyebrow}>YOUR PRODUCTIVITY COMPANION</Text>
+        <Text style={styles.pageTitle}>About My Schedule</Text>
+        <Text style={styles.pageSubtitle}>A calmer way to plan your day and build momentum.</Text>
+      </View>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -77,13 +80,17 @@ export default function About() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  scroll: { padding: S.lg, paddingBottom: 40 },
+  pageHeader: { paddingHorizontal: S.lg, paddingTop: S.lg, paddingBottom: S.sm, backgroundColor: C.bg },
+  pageEyebrow: { fontSize: 10, fontWeight: '800', color: C.primary, letterSpacing: 1.2, marginBottom: S.xs },
+  pageTitle: { fontSize: 26, lineHeight: 32, fontWeight: '800', color: C.text, letterSpacing: -0.7 },
+  pageSubtitle: { fontSize: 13, lineHeight: 19, color: C.textSub, marginTop: S.xs },
+  scroll: { paddingHorizontal: S.lg, paddingTop: S.sm, paddingBottom: 24 },
 
   // Hero
   hero: {
     alignItems: 'center',
-    paddingVertical: S.xl,
-    marginBottom: S.lg,
+    paddingVertical: S.lg,
+    marginBottom: S.sm,
   },
   appIcon: {
     width: 80,
@@ -129,7 +136,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     marginBottom: S.sm,
-    marginTop: S.lg,
+    marginTop: S.md,
   },
 
   // Features
