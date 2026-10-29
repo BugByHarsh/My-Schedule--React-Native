@@ -10,13 +10,14 @@ import AddEditTaskModal from '../components/AddEditTaskModal';
 import { initNotifications } from '../utils/notifications';
 import { useDailyNotifications } from '../utils/useDailyNotifs';
 import { C, S, R } from '../theme';
+import { getLocalDateKey, getShortDay } from '../utils/dates';
 
 const TIMETABLE_KEY = '@TIMETABLE_v1';
 const PROGRESS_KEY  = '@TASK_PROGRESS_v1';
 
 const todayDate = new Date();
-const weekday   = todayDate.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon"
-const todayStr  = todayDate.toISOString().slice(0, 10);                        // "YYYY-MM-DD"
+const weekday   = getShortDay(todayDate);
+const todayStr  = getLocalDateKey(todayDate);
 
 function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
