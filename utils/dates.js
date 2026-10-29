@@ -17,3 +17,13 @@ export function parseLocalDateKey(dateKey) {
 export function getShortDay(date = new Date()) {
   return date.toLocaleDateString('en-US', { weekday: 'short' });
 }
+
+export function getNextDateForShortDay(shortDay, from = new Date()) {
+  const dayNumbers = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const targetDay = dayNumbers[shortDay];
+  if (targetDay === undefined) return getLocalDateKey(from);
+  const result = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const daysAhead = (targetDay - result.getDay() + 7) % 7;
+  result.setDate(result.getDate() + daysAhead);
+  return getLocalDateKey(result);
+}
