@@ -1,9 +1,12 @@
 import { Tabs } from 'expo-router';
 import { View, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, CalendarDays, Info, Timer, CalendarClock } from 'lucide-react-native';
 import { C } from '../theme';
 
 export default function Layout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={{ flex: 1, backgroundColor: C.surface }}>
       <Tabs
@@ -15,8 +18,8 @@ export default function Layout() {
             backgroundColor: C.surface,
             borderTopWidth: 1,
             borderTopColor: C.border,
-            height: Platform.OS === 'ios' ? 84 : 64,
-            paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+            height: Platform.OS === 'ios' ? 84 : 64 + insets.bottom,
+            paddingBottom: Platform.OS === 'ios' ? 24 : Math.max(insets.bottom, 8),
             paddingTop: 8,
             // Subtle top shadow
             shadowColor: '#000',
