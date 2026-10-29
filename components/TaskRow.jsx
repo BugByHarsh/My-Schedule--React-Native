@@ -18,6 +18,9 @@ export default function TaskRow({ item, onStart, onComplete }) {
           taskTitle: item.title,
           // The focus countdown starts when Focus is opened, not when the task was first started.
           startedAt: new Date().toISOString(),
+          remainingSeconds: item.durationMinutes * 60,
+          isRunning: true,
+          endsAt: Date.now() + item.durationMinutes * 60 * 1000,
         })
       );
       router.push('/focus');
