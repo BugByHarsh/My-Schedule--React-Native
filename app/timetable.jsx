@@ -114,8 +114,11 @@ export default function TimeTable() {
         title: updatedTask.title,
         time: updatedTask.time,
         durationMinutes: updatedTask.durationMinutes,
-        repeatDays: task.repeatDays || originalTask.repeatDays || [],
-        seriesId,
+        // "Just this day" detaches this occurrence from its repeating series.
+        // A detached task must not retain the old weekdays or series ID.
+        repeatDays: [],
+        seriesId: task.id,
+        scheduledDate: task.scheduledDate || getNextDateForShortDay(activeDay),
         notifId: null,
       }));
       saveTimetable(updated);
