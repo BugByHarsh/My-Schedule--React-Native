@@ -73,7 +73,7 @@ export async function scheduleStartNotification(task) {
       },
     });
 
-    console.log('✅ Scheduled  notification:', await Notifications.getAllScheduledNotificationsAsync());
+    // Avoid fetching and logging every scheduled notification after each schedule.
     
     return id;
   } catch (e) {
