@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import Header from '../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from 'expo-router';
 import { C, S, R } from '../theme';
 import { getLocalDateKey, getShortDay, parseLocalDateKey, normalizeTimetable } from '../utils/dates';
 
