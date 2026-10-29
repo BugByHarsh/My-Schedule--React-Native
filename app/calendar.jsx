@@ -282,7 +282,6 @@ export default function CalendarScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>📅</Text>
             <Text style={styles.emptyTitle}>No tasks this day</Text>
-            <Text style={styles.emptyHint}>Add tasks in the Timetable tab</Text>
           </View>
         )}
       </View>
