@@ -15,6 +15,8 @@ export default function FocusScreen() {
   const [endsAt, setEndsAt] = useState(null);
   const [taskTitle, setTaskTitle] = useState('');
   const completedRef = useRef(false);
+  const actionLockRef = useRef(false);
+  const [savingAction, setSavingAction] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -107,15 +109,15 @@ export default function FocusScreen() {
   }
 
   const toggleRunning = async () => {
-    if (remaining === null || remaining <= 0 || duration === null) return;
+    if (actionLockRef.current || remaining === null || remaining <= 0 || duration === null) return;
+    actionLockRef.current = true;
+    setSavingAction(true);
+
     try {
       if (running) {
         const left = Number.isFinite(endsAt)
           ? Math.max(0, Math.ceil((endsAt - Date.now()) / 1000))
           : remaining;
-        setRemaining(left);
-        setRunning(false);
-        setEndsAt(null);
         await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
           durationMinutes: duration,
           taskTitle,
@@ -123,10 +125,11 @@ export default function FocusScreen() {
           isRunning: false,
           endsAt: null,
         }));
+        setRemaining(left);
+        setRunning(false);
+        setEndsAt(null);
       } else {
         const nextEnd = Date.now() + remaining * 1000;
-        setEndsAt(nextEnd);
-        setRunning(true);
         await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
           durationMinutes: duration,
           taskTitle,
@@ -134,9 +137,15 @@ export default function FocusScreen() {
           isRunning: true,
           endsAt: nextEnd,
         }));
+        setEndsAt(nextEnd);
+        setRunning(true);
       }
     } catch (e) {
       console.warn('Failed to save focus session state', e);
+      Alert.alert('Could not save session', 'Please try pausing or resuming again.');
+    } finally {
+      actionLockRef.current = false;
+      setSavingAction(false);
     }
   };
 
@@ -213,6 +222,8 @@ export default function FocusScreen() {
           ]}
           accessibilityRole="button"
           accessibilityLabel={running ? 'Pause focus session' : 'Resume focus session'}
+          accessibilityState={{ disabled: savingAction }}
+          disabled={savingAction}
           onPress={toggleRunning}
         >
           <Text style={styles.primaryBtnText}>
