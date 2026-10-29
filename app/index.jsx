@@ -196,11 +196,6 @@ export default function Index() {
       <Header />
       <StatsRow tasks={allTasks} selectedDate={todayStr} />
 
-      <View style={styles.taskSectionHeading}>
-        <Text style={styles.taskSectionTitle}>Your tasks</Text>
-        <Text style={styles.taskSectionHint}>A little progress goes a long way</Text>
-      </View>
-
       {/* Pill tabs */}
       <View style={styles.tabsWrap}>
         {TABS.map((tab) => {
@@ -300,9 +295,6 @@ export default function Index() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  taskSectionHeading: { paddingHorizontal: S.lg, paddingTop: S.sm, paddingBottom: S.xs },
-  taskSectionTitle: { fontSize: 17, fontWeight: '800', color: C.text, letterSpacing: -0.2 },
-  taskSectionHint: { fontSize: 12, color: C.textSub, marginTop: 3 },
   tabsWrap: {
     flexDirection: 'row',
     paddingHorizontal: S.lg,
