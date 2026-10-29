@@ -65,59 +65,85 @@ export default function TimeTable() {
 
   // ─── Add ───────────────────────────────────────────────────────────────────
   const onAdd = (newTask) => {
-    const id   = Date.now().toString();
-    const task = {
-      id,
-      title:           newTask.title.trim(),
-      time:            newTask.time || '09:00 AM',
-      durationMinutes: newTask.durationMinutes || 60,
-      repeatDays:      newTask.repeatDays || [],
-      scheduledDate:   (newTask.repeatDays || []).length ? null : getNextDateForShortDay(activeDay),
-      completed:       false,
-      startedOnDate:   null,
-      completedOnDate: null,
-      startedAt:       null,
-      notifId:         null,
-    };
-    const updated    = { ...timetable };
-    const targetDays = task.repeatDays.length > 0 ? task.repeatDays : [activeDay];
+    const seriesId = Date.now().toString();
+    const repeatDays = newTask.repeatDays || [];
+    const targetDays = repeatDays.length > 0 ? repeatDays : [activeDay];
+    const updated = { ...timetable };
     targetDays.forEach((day) => {
       if (!updated[day]) updated[day] = [];
-      updated[day] = [
-        task,
-        ...updated[day].filter(
-          (t) => !(t.title === task.title && t.time === task.time)
-        ),
-      ];
+      const occurrence = {
+        id: `${seriesId}-${day}`,
+        seriesId,
+        title: newTask.title.trim(),
+        time: newTask.time || '09:00 AM',
+        durationMinutes: newTask.durationMinutes || 60,
+        repeatDays,
+        scheduledDate: repeatDays.length ? null : getNextDateForShortDay(activeDay),
+        completed: false,
+        startedOnDate: null,
+        completedOnDate: null,
+        startedAt: null,
+        notifId: null,
+      };
+      updated[day] = [occurrence, ...updated[day]];
     });
     saveTimetable(updated);
   };
 
   // ─── Edit ──────────────────────────────────────────────────────────────────
-  const onEditSave = async (updatedTask) => {
+  const onEditSave = async (updatedTask, scope = 'all-days') => {
     const updated = { ...timetable };
-    const originalTask = WEEKDAYS.flatMap((day) => updated[day] || []).find((task) => task.id === updatedTask.id);
-    // Editing time/title invalidates any already-scheduled reminder for this task.
+    const originalTask =
+      (updated[activeDay] || []).find((task) => task.id === updatedTask.id) ||
+      WEEKDAYS.flatMap((day) => updated[day] || []).find((task) => task.id === updatedTask.id);
+    const seriesId = originalTask?.seriesId || originalTask?.id || updatedTask.id;
+    const isRecurring = Array.isArray(originalTask?.repeatDays) && originalTask.repeatDays.length > 0;
+    const belongsToSeries = (task) => (task.seriesId || task.id) === seriesId;
+
+    if (scope === 'this-day' && isRecurring) {
+      const dayTasks = updated[activeDay] || [];
+      const occurrence = dayTasks.find((task) => task.id === updatedTask.id);
+      if (occurrence?.notifId) await cancelScheduled(occurrence.notifId);
+      updated[activeDay] = dayTasks.map((task) => task.id !== updatedTask.id ? task : ({
+        ...task,
+        title: updatedTask.title,
+        time: updatedTask.time,
+        durationMinutes: updatedTask.durationMinutes,
+        repeatDays: task.repeatDays || originalTask.repeatDays || [],
+        seriesId,
+        notifId: null,
+      }));
+      saveTimetable(updated);
+      setEditingTask(null);
+      return;
+    }
+
     for (const day of WEEKDAYS) {
       for (const task of updated[day] || []) {
-        if (task.id === updatedTask.id && task.notifId) await cancelScheduled(task.notifId);
+        if (belongsToSeries(task) && task.notifId) await cancelScheduled(task.notifId);
       }
     }
-    const repeatDays = updatedTask.repeatDays?.length ? updatedTask.repeatDays : [activeDay];
-    updatedTask = {
-      ...updatedTask,
-      notifId: null,
-      scheduledDate: updatedTask.repeatDays?.length
-        ? null
-        : (originalTask?.scheduledDate || getNextDateForShortDay(activeDay)),
-    };
-
+    const repeatDays = updatedTask.repeatDays?.length ? updatedTask.repeatDays : [];
+    const targetDays = repeatDays.length ? repeatDays : [activeDay];
+    const scheduledDate = repeatDays.length ? null : (originalTask?.scheduledDate || getNextDateForShortDay(activeDay));
+    const previousByDay = {};
     WEEKDAYS.forEach((day) => {
-      if (updated[day]) updated[day] = updated[day].filter((t) => t.id !== updatedTask.id);
+      previousByDay[day] = (updated[day] || []).find(belongsToSeries);
+      if (updated[day]) updated[day] = updated[day].filter((task) => !belongsToSeries(task));
     });
-    repeatDays.forEach((day) => {
+    const editedAt = Date.now();
+    targetDays.forEach((day) => {
       if (!updated[day]) updated[day] = [];
-      updated[day].push(updatedTask);
+      const previous = previousByDay[day] || originalTask || {};
+      updated[day].push({
+        ...previous,
+        ...updatedTask,
+        id: `${seriesId}-${day}-${editedAt}`,
+        seriesId,
+        repeatDays,
+        scheduledDate,
+        notifId: null,
+      });
     });
     saveTimetable(updated);
     setEditingTask(null);
@@ -131,12 +157,13 @@ export default function TimeTable() {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
           const updated = { ...timetable };
+          const seriesId = task.seriesId || task.id;
           for (const day of WEEKDAYS) {
             if (updated[day]) {
               for (const t of updated[day]) {
-                if (t.id === task.id && t.notifId) await cancelScheduled(t.notifId);
+                if ((t.seriesId || t.id) === seriesId && t.notifId) await cancelScheduled(t.notifId);
               }
-              updated[day] = updated[day].filter((t) => t.id !== task.id);
+              updated[day] = updated[day].filter((t) => (t.seriesId || t.id) !== seriesId);
             }
           }
           saveTimetable(updated);
@@ -298,6 +325,7 @@ export default function TimeTable() {
           onAdd={onAdd}
           onSave={onEditSave}
           editingTask={editingTask}
+          activeDay={activeDay}
           hideDate
           showRepeatDays
         />
