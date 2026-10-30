@@ -64,18 +64,16 @@ export default function About() {
         {/* Developer */}
         <Text style={styles.sectionHeading}>Developer</Text>
         <View style={styles.devCard}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Open Harsh Upadhyay's GitHub profile"
+            onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
+            style={({ pressed }) => [styles.githubLink, pressed && { opacity: 0.65 }]}
+          >
+            <Github size={26} color={C.primary} strokeWidth={2.2} />
+          </Pressable>
           <View style={styles.devInfo}>
-            <View style={styles.devNameRow}>
-              <Text style={styles.devName}>Harsh Upadhyay</Text>
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel="Open Harsh Upadhyay's GitHub profile"
-                onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
-                style={({ pressed }) => [styles.githubLink, pressed && { opacity: 0.65 }]}
-              >
-                <Github size={24} color={C.primary} strokeWidth={2.2} />
-              </Pressable>
-            </View>
+            <Text style={styles.devName}>Harsh Upadhyay</Text>
             <Text style={styles.devRole}>Creator & Developer</Text>
           </View>
         </View>
@@ -221,8 +219,8 @@ const styles = StyleSheet.create({
   devNameRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   devName: { fontSize: 16, fontWeight: '700', color: C.text },
   githubLink: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     borderRadius: R.full,
     backgroundColor: C.primaryLight,
     alignItems: 'center',
