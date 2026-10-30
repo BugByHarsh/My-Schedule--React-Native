@@ -40,6 +40,14 @@
             "backgroundColor": "#0f172a"
           }
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/task_reminder.wav"
+          ]
+        }
       ]
     ],
     "experiments": {
