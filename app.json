@@ -41,14 +41,7 @@
           }
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "sounds": [
-            "./assets/sounds/task_reminder.wav"
-          ]
-        }
-      ]
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
