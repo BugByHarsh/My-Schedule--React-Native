@@ -33,6 +33,7 @@ export default function Index() {
   const weekday = getShortDay(todayDate);
   const todayStr = getLocalDateKey(todayDate);
   const [dataReady, setDataReady] = useState(false);
+  const [focusSession, setFocusSession] = useState(null);
 
   const selectedTabRef = useRef(selectedTab);
   const hasLoadedRef = useRef(false);
@@ -58,10 +59,18 @@ export default function Index() {
     // full loading state on the first load to avoid a navigation flicker.
     if (!hasLoadedRef.current) setLoading(true);
     try {
-      const [data1, data2] = await Promise.all([
+      const [data1, data2, focusData] = await Promise.all([
         AsyncStorage.getItem(TIMETABLE_KEY),
         AsyncStorage.getItem(PROGRESS_KEY),
+        AsyncStorage.getItem('@Focus_Duration'),
       ]);
+      try {
+        const savedFocus = focusData ? JSON.parse(focusData) : null;
+        setFocusSession(savedFocus && Number.isFinite(savedFocus.durationMinutes)
+          && Number.isFinite(savedFocus.remainingSeconds) ? savedFocus : null);
+      } catch {
+        setFocusSession(null);
+      }
       const parsedTimetable = data1 ? JSON.parse(data1) : {};
       const normalized = normalizeTimetable(parsedTimetable, todayDate);
       const loadedTimetable = normalized.timetable;
@@ -266,6 +275,7 @@ export default function Index() {
           renderItem={({ item }) => (
             <TaskRow
               item={item}
+              focusSession={focusSession}
               onStart={() => onStart(item)}
               onComplete={() => onComplete(item)}
             />
