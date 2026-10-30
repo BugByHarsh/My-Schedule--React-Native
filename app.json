@@ -21,7 +21,8 @@
       },
       "edgeToEdgeEnabled": false,
       "predictiveBackGestureEnabled": false,
-      "package": "com.harsh9756.task_app"
+      "package": "com.harsh9756.task_app",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "output": "static",
