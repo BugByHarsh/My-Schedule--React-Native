@@ -14,6 +14,7 @@ export default function FocusScreen() {
   const [running, setRunning] = useState(false);
   const [endsAt, setEndsAt] = useState(null);
   const [taskTitle, setTaskTitle] = useState('');
+  const [taskId, setTaskId] = useState(null);
   const completedRef = useRef(false);
   const actionLockRef = useRef(false);
   const [savingAction, setSavingAction] = useState(false);
@@ -28,13 +29,13 @@ export default function FocusScreen() {
           const stored = await AsyncStorage.getItem('@Focus_Duration');
           if (!isActive) return;
           if (!stored) {
-            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle('');
+            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle(''); setTaskId(null); setTaskId(null);
             return;
           }
           const parsed = JSON.parse(stored);
           const durationMinutes = Number(parsed.durationMinutes);
           if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle('');
+            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle(''); setTaskId(null);
             return;
           }
 
@@ -64,11 +65,12 @@ export default function FocusScreen() {
           setDuration(durationMinutes);
           setRemaining(left);
           setTaskTitle(typeof parsed.taskTitle === 'string' ? parsed.taskTitle : '');
+          setTaskId(typeof parsed.taskId === 'string' ? parsed.taskId : null);
           setEndsAt(endTimestamp);
           setRunning(left > 0 && isRunning);
         } catch (e) {
           console.warn('⚠️ Failed to load focus data', e);
-          setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle('');
+          setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle(''); setTaskId(null);
         }
       })();
 
@@ -121,6 +123,7 @@ export default function FocusScreen() {
         await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
           durationMinutes: duration,
           taskTitle,
+          taskId,
           remainingSeconds: left,
           isRunning: false,
           endsAt: null,
@@ -133,6 +136,7 @@ export default function FocusScreen() {
         await AsyncStorage.setItem('@Focus_Duration', JSON.stringify({
           durationMinutes: duration,
           taskTitle,
+          taskId,
           remainingSeconds: remaining,
           isRunning: true,
           endsAt: nextEnd,
