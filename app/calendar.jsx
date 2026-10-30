@@ -228,6 +228,13 @@ export default function CalendarScreen() {
                     {item.durationMinutes ? (
                       <Text style={styles.taskDuration}>⏱ {item.durationMinutes} min</Text>
                     ) : null}
+                    {Array.isArray(item.repeatDays) && item.repeatDays.length > 0 ? (
+                      <Text style={styles.taskRepeat} numberOfLines={1}>
+                        Repeats: {item.repeatDays.join(', ')}
+                      </Text>
+                    ) : item.historicalOnly ? (
+                      <Text style={styles.taskRepeat}>Past scheduled task</Text>
+                    ) : null}
                   </View>
                   <View style={[styles.statusPill, { backgroundColor: statusColor + '22' }]}>
                     <Text style={[styles.statusPillText, { color: statusColor }]}>
@@ -306,6 +313,11 @@ const styles = StyleSheet.create({
   taskDuration: {
     fontSize: 11,
     color: C.textSub,
+  },
+  taskRepeat: {
+    fontSize: 10,
+    color: C.textHint,
+    marginTop: 3,
   },
   statusPill: {
     marginRight: S.md,
