@@ -109,9 +109,6 @@ export default function CalendarScreen() {
     setDayTasks(merged);
   }, [selectedDate, timetable, progress]);
 
-  const completedCount = dayTasks.filter((t) => t.completed).length;
-  const startedCount = dayTasks.filter((t) => t.started && !t.completed).length;
-  const pct = dayTasks.length > 0 ? Math.round((completedCount / dayTasks.length) * 100) : 0;
   const isPast = selectedDate < todayStr;
   const isToday = selectedDate === todayStr;
 
@@ -180,7 +177,9 @@ export default function CalendarScreen() {
 
       <View style={styles.content}>
         <View style={styles.calendarActions}>
-          <Text style={styles.calendarHint}>Dots mark scheduled days · Select a date to review it</Text>
+          <Text style={styles.selectedDateTitle}>
+            {isToday ? "Today's tasks" : parseLocalDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </Text>
           {!isToday && (
             <Pressable
               accessibilityRole="button"
@@ -192,52 +191,7 @@ export default function CalendarScreen() {
             </Pressable>
           )}
         </View>
-        {/* Summary card */}
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryTop}>
-            <View>
-              <Text style={styles.summaryDate}>
-                {isToday ? 'Today' : parseLocalDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-              </Text>
-              <Text style={styles.summaryCount}>
-                {dayTasks.length === 0
-                  ? 'No tasks'
-                  : `${completedCount} of ${dayTasks.length} complete`}
-              </Text>
-            </View>
-            {dayTasks.length > 0 && (
-              <View style={styles.pctCircle}>
-                <Text style={styles.pctText}>{pct}%</Text>
-              </View>
-            )}
-          </View>
-
-          {dayTasks.length > 0 && (
-            <>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${pct}%` }]} />
-              </View>
-              <View style={styles.legendRow}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: C.green }]} />
-                  <Text style={styles.legendText}>{completedCount} done</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: C.amber }]} />
-                  <Text style={styles.legendText}>{startedCount} in progress</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: C.border2 }]} />
-                  <Text style={styles.legendText}>
-                    {dayTasks.length - completedCount - startedCount} pending
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Task list */}
+        {/* Full task details for the selected date */}
         {dayTasks.length > 0 ? (
           <FlatList
             data={dayTasks}
@@ -297,86 +251,12 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.bg },
-  calendar: { height: 360, flexShrink: 0 },
+  calendar: { flexShrink: 0 },
   content: { flex: 1, paddingHorizontal: S.lg, paddingTop: S.md },
   calendarActions: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
-  calendarHint: { fontSize: 12, color: C.textSub, flex: 1 },
+  selectedDateTitle: { fontSize: 17, fontWeight: '800', color: C.text },
   todayButton: { backgroundColor: C.primaryLight, borderRadius: R.full, paddingHorizontal: S.md, paddingVertical: S.sm, marginLeft: S.sm },
   todayButtonText: { fontSize: 12, fontWeight: '800', color: C.primary },
-  summaryCard: {
-    backgroundColor: C.surface,
-    borderRadius: R.lg,
-    padding: S.lg,
-    marginBottom: S.md,
-    borderWidth: 1,
-    borderColor: C.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  summaryTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: S.md,
-  },
-  summaryDate: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: C.text,
-    letterSpacing: -0.3,
-  },
-  summaryCount: {
-    fontSize: 13,
-    color: C.textSub,
-    marginTop: 2,
-  },
-  pctCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: C.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pctText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: C.primary,
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: C.border,
-    borderRadius: R.full,
-    overflow: 'hidden',
-    marginBottom: S.sm,
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: C.primary,
-    borderRadius: R.full,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    gap: S.md,
-    flexWrap: 'wrap',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 11,
-    color: C.textSub,
-    fontWeight: '500',
-  },
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
