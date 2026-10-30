@@ -29,7 +29,7 @@ export default function FocusScreen() {
           const stored = await AsyncStorage.getItem('@Focus_Duration');
           if (!isActive) return;
           if (!stored) {
-            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle(''); setTaskId(null); setTaskId(null);
+            setDuration(null); setRemaining(null); setRunning(false); setEndsAt(null); setTaskTitle(''); setTaskId(null);
             return;
           }
           const parsed = JSON.parse(stored);
