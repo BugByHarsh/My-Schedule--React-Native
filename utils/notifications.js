@@ -3,7 +3,9 @@ import { Platform, Alert, LogBox } from 'react-native';
 
 // 🔕 Ignore Expo Go notification warning
 
-// Default handler — prevents “no handler” warning
+// Use a new channel ID so Android does not keep the old channel's default sound.
+const REMINDER_CHANNEL_ID = 'task-reminders-custom';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -15,17 +17,17 @@ Notifications.setNotificationHandler({
 export async function initNotifications() {
   try {
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: Notifications.AndroidImportance.MAX, // 👈 Highest priority
-        sound: 'default',
+      await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
+        name: 'Task reminders',
+        description: 'Sound alerts for scheduled task reminders',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'task_reminder.wav',
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         enableVibrate: true,
         vibrationPattern: [250, 250, 250, 250],
       });
     }
 
-    // Request permission if not granted
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
@@ -38,14 +40,12 @@ export async function initNotifications() {
       Alert.alert('Notifications', 'Enable notifications in settings to receive reminders.');
       return;
     }
-
   } catch (e) {
     console.warn('❌ Notification init failed:', e);
   }
 }
 
 export async function scheduleStartNotification(task) {
-
   if (!task.date || !task.time) return null;
 
   try {
@@ -59,22 +59,20 @@ export async function scheduleStartNotification(task) {
     const [y, m, d] = task.date.split('-').map(Number);
     const dt = new Date(y, m - 1, d, hh, mm, 0);
 
-    // Schedule local notification
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: '🚀 Hey There! Time to Start',
         body: `It's time to start your task: ${task.title}`,
-        sound: 'default',
+        sound: 'task_reminder.wav',
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: dt,
+        ...(Platform.OS === 'android' ? { channelId: REMINDER_CHANNEL_ID } : {}),
         repeats: false,
       },
     });
 
-    // Avoid fetching and logging every scheduled notification after each schedule.
-    
     return id;
   } catch (e) {
     console.warn('❌ schedule failed', e);
