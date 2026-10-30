@@ -5,7 +5,7 @@ import { Target } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { C, S, R } from '../theme';
 
-export default function TaskRow({ item, onStart, onComplete }) {
+export default function TaskRow({ item, focusSession, onStart, onComplete }) {
   const router = useRouter();
   const [now, setNow] = useState(Date.now());
 
@@ -16,6 +16,7 @@ export default function TaskRow({ item, onStart, onComplete }) {
         JSON.stringify({
           durationMinutes: item.durationMinutes,
           taskTitle: item.title,
+          taskId: item.id,
           // The focus countdown starts when Focus is opened, not when the task was first started.
           startedAt: new Date().toISOString(),
           remainingSeconds: item.durationMinutes * 60,
@@ -29,18 +30,24 @@ export default function TaskRow({ item, onStart, onComplete }) {
     }
   };
 
+  const belongsToThisTask = focusSession
+    && (focusSession.taskId ? focusSession.taskId === item.id : focusSession.taskTitle === item.title);
+
   useEffect(() => {
-    if (!item.startedAt || item.completed) return;
+    if (!belongsToThisTask || focusSession?.isRunning !== true || !Number.isFinite(focusSession?.endsAt)) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [item.startedAt, item.completed]);
+  }, [belongsToThisTask, focusSession?.isRunning, focusSession?.endsAt]);
 
   const elapsedLabel = (() => {
-    if (!item.startedAt || item.completed) return null;
-    const sec = Math.floor((now - item.startedAt) / 1000);
-    if (sec < 0) return null;
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
+    if (!belongsToThisTask || item.completed) return null;
+    const totalSeconds = focusSession.durationMinutes * 60;
+    const remainingSeconds = focusSession.isRunning && Number.isFinite(focusSession.endsAt)
+      ? Math.max(0, Math.ceil((focusSession.endsAt - now) / 1000))
+      : Math.max(0, Math.floor(focusSession.remainingSeconds));
+    const elapsedSeconds = Math.max(0, totalSeconds - remainingSeconds);
+    const m = Math.floor(elapsedSeconds / 60);
+    const s = elapsedSeconds % 60;
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   })();
 
