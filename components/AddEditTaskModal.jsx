@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Modal, View, Text, TextInput,
-  Pressable, StyleSheet, ScrollView,
+  Pressable, StyleSheet, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { C, S, R } from '../theme';
@@ -113,6 +113,11 @@ export default function AddEditTaskModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoiding}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
       <Pressable style={styles.backdrop} onPress={onClose}>
         {/* Stop press propagation so tapping inside sheet doesn't close */}
         <Pressable style={styles.sheet} onPress={() => {}}>
@@ -129,7 +134,12 @@ export default function AddEditTaskModal({
             </View>
           )}
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.formScroll}
+            contentContainerStyle={styles.formContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             {/* Title */}
             <Text style={styles.label}>Task Name</Text>
             <TextInput
@@ -277,6 +287,7 @@ export default function AddEditTaskModal({
           </View>
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -295,7 +306,11 @@ const styles = StyleSheet.create({
     paddingTop: S.sm,
     paddingBottom: S.xxl,
     maxHeight: '92%',
+    flexShrink: 1,
   },
+  keyboardAvoiding: { flex: 1 },
+  formScroll: { flexShrink: 1 },
+  formContent: { paddingBottom: S.md },
   handle: {
     width: 36, height: 4,
     backgroundColor: C.border2,
@@ -364,7 +379,7 @@ const styles = StyleSheet.create({
   scopeOverlay: {
     ...StyleSheet.absoluteFillObject, zIndex: 20,
     backgroundColor: 'rgba(15,23,42,0.55)', alignItems: 'center',
-    justifyContent: 'center', padding: S.md,
+    justifyContent: 'center', padding: S.md, elevation: 30,
   },
   scopeCard: { width: '100%', backgroundColor: C.surface, borderRadius: R.lg,
     padding: S.lg, borderWidth: 1, borderColor: C.border },
