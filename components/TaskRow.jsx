@@ -11,13 +11,34 @@ export default function TaskRow({ item, focusSession, onStart, onComplete }) {
 
   const onFocus = async () => {
     try {
+      // Reuse an existing session for this task instead of resetting its countdown.
+      const saved = await AsyncStorage.getItem('@Focus_Duration');
+      if (saved) {
+        try {
+          const session = JSON.parse(saved);
+          const isSameTask = session.taskId
+            ? session.taskId === item.id
+            : session.taskTitle === item.title;
+          const remainingSeconds = session.isRunning === true && Number.isFinite(session.endsAt)
+            ? Math.max(0, Math.ceil((session.endsAt - Date.now()) / 1000))
+            : Math.max(0, Math.floor(Number(session.remainingSeconds) || 0));
+
+          if (isSameTask && remainingSeconds > 0) {
+            router.push('/focus');
+            return;
+          }
+        } catch {
+          // Ignore invalid saved data and create a fresh session below.
+        }
+      }
+
       await AsyncStorage.setItem(
         '@Focus_Duration',
         JSON.stringify({
           durationMinutes: item.durationMinutes,
           taskTitle: item.title,
           taskId: item.id,
-          // The focus countdown starts when Focus is opened, not when the task was first started.
+          // A new countdown starts only when this task has no active saved session.
           startedAt: new Date().toISOString(),
           remainingSeconds: item.durationMinutes * 60,
           isRunning: true,
@@ -26,7 +47,7 @@ export default function TaskRow({ item, focusSession, onStart, onComplete }) {
       );
       router.push('/focus');
     } catch (e) {
-      console.warn('Failed to store focus duration', e);
+      console.warn('Failed to open focus session', e);
     }
   };
 
