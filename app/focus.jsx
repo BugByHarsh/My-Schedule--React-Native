@@ -1,12 +1,14 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useIsFocused } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Vibration, Alert, StatusBar, AppState, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Vibration, Alert, AppState, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
 import { C, S, R } from '../theme';
 
 export default function FocusScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const { width, height } = useWindowDimensions();
   const ringSize = Math.max(180, Math.min(260, width - 64, height * 0.36));
   const [duration, setDuration] = useState(null);
@@ -157,7 +159,7 @@ export default function FocusScreen() {
   if (duration === null || remaining === null) {
     return (
       <View style={styles.fallback}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar style={isFocused ? 'light' : 'dark'} />
         <Text style={styles.fallbackIcon}>🎯</Text>
         <Text style={styles.fallbackTitle}>No Active Session</Text>
         <Text style={styles.fallbackSub}>Start a task from Home to begin a focus session.</Text>
