@@ -3,8 +3,7 @@ import { Platform, Alert, LogBox } from 'react-native';
 
 // 🔕 Ignore Expo Go notification warning
 
-// Use a new channel ID so Android does not keep the old channel's default sound.
-const REMINDER_CHANNEL_ID = 'task-reminders-custom';
+const REMINDER_CHANNEL_ID = 'task-reminders';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,9 +18,9 @@ export async function initNotifications() {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
         name: 'Task reminders',
-        description: 'Sound alerts for scheduled task reminders',
+        description: 'Alerts for scheduled task reminders',
         importance: Notifications.AndroidImportance.MAX,
-        sound: 'task_reminder.wav',
+        sound: 'default',
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
         enableVibrate: true,
         vibrationPattern: [250, 250, 250, 250],
@@ -63,7 +62,7 @@ export async function scheduleStartNotification(task) {
       content: {
         title: '🚀 Hey There! Time to Start',
         body: `It's time to start your task: ${task.title}`,
-        sound: 'task_reminder.wav',
+        sound: 'default',
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
