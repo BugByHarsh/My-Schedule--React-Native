@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Github } from 'lucide-react-native';
+import { Github, ChevronRight, MessageCircle } from 'lucide-react-native';
 import { C, S, R } from '../theme';
 
 const FEATURES = [
@@ -63,20 +63,39 @@ export default function About() {
 
         {/* Developer */}
         <Text style={styles.sectionHeading}>Developer</Text>
-        <View style={styles.devCard}>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Open Harsh Upadhyay's GitHub profile"
-            onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
-            style={({ pressed }) => [styles.githubLink, pressed && { opacity: 0.65 }]}
-          >
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Visit Harsh Upadhyay's GitHub profile"
+          onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
+          style={({ pressed }) => [styles.devCard, pressed && styles.cardPressed]}
+        >
+          <View style={styles.githubLink}>
             <Github size={26} color={C.primary} strokeWidth={2.2} />
-          </Pressable>
+          </View>
           <View style={styles.devInfo}>
             <Text style={styles.devName}>Harsh Upadhyay</Text>
             <Text style={styles.devRole}>Creator & Developer</Text>
           </View>
-        </View>
+          <ChevronRight size={20} color={C.textHint} />
+        </Pressable>
+
+        {/* Feedback */}
+        <Text style={styles.sectionHeading}>Have an idea?</Text>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Report a bug or suggest a feature on GitHub"
+          onPress={() => Linking.openURL('https://github.com/BugByHarsh/My-Schedule--React-Native/issues')}
+          style={({ pressed }) => [styles.feedbackCard, pressed && styles.cardPressed]}
+        >
+          <View style={styles.feedbackIcon}>
+            <MessageCircle size={21} color={C.primary} />
+          </View>
+          <View style={styles.devInfo}>
+            <Text style={styles.feedbackTitle}>Share feedback</Text>
+            <Text style={styles.feedbackDesc}>Report a bug or suggest an improvement</Text>
+          </View>
+          <ChevronRight size={20} color={C.textHint} />
+        </Pressable>
 
         <Text style={styles.footer}>Made with ❤️ in React Native</Text>
       </ScrollView>
@@ -215,6 +234,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
+  cardPressed: { opacity: 0.72, transform: [{ scale: 0.99 }] },
+  feedbackCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    padding: S.md,
+    gap: S.md,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  feedbackIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: R.md,
+    backgroundColor: C.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackTitle: { fontSize: 14, fontWeight: '700', color: C.text },
+  feedbackDesc: { fontSize: 12, color: C.textSub, marginTop: 3 },
   devInfo: { flex: 1 },
   devNameRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   devName: { fontSize: 16, fontWeight: '700', color: C.text },
