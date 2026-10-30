@@ -73,7 +73,7 @@ export default function About() {
                 onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
                 style={({ pressed }) => [styles.githubLink, pressed && { opacity: 0.65 }]}
               >
-                <Github size={20} color={C.primary} />
+                <Github size={24} color={C.primary} strokeWidth={2.2} />
               </Pressable>
             </View>
             <Text style={styles.devRole}>Creator & Developer</Text>
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
   devNameRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
   devName: { fontSize: 16, fontWeight: '700', color: C.text },
   githubLink: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     borderRadius: R.full,
     backgroundColor: C.primaryLight,
     alignItems: 'center',
