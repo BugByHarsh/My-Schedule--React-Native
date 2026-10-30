@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Github } from 'lucide-react-native';
 import { C, S, R } from '../theme';
 
 const FEATURES = [
@@ -63,11 +64,18 @@ export default function About() {
         {/* Developer */}
         <Text style={styles.sectionHeading}>Developer</Text>
         <View style={styles.devCard}>
-          <View style={styles.devAvatar}>
-            <Text style={styles.devAvatarText}>HU</Text>
-          </View>
-          <View>
-            <Text style={styles.devName}>Harsh Upadhyay</Text>
+          <View style={styles.devInfo}>
+            <View style={styles.devNameRow}>
+              <Text style={styles.devName}>Harsh Upadhyay</Text>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Open Harsh Upadhyay's GitHub profile"
+                onPress={() => Linking.openURL('https://github.com/BugByHarsh')}
+                style={({ pressed }) => [styles.githubLink, pressed && { opacity: 0.65 }]}
+              >
+                <Github size={20} color={C.primary} />
+              </Pressable>
+            </View>
             <Text style={styles.devRole}>Creator & Developer</Text>
           </View>
         </View>
@@ -209,16 +217,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  devAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: C.primary,
+  devInfo: { flex: 1 },
+  devNameRow: { flexDirection: 'row', alignItems: 'center', gap: S.sm },
+  devName: { fontSize: 16, fontWeight: '700', color: C.text },
+  githubLink: {
+    width: 32,
+    height: 32,
+    borderRadius: R.full,
+    backgroundColor: C.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  devAvatarText: { fontSize: 16, fontWeight: '800', color: '#fff' },
-  devName: { fontSize: 16, fontWeight: '700', color: C.text },
   devRole: { fontSize: 13, color: C.textSub, marginTop: 2 },
 
   footer: {
