@@ -1,0 +1,346 @@
+import { useState, useEffect, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Calendar } from 'react-native-calendars';
+import Header from '../components/Header';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useIsFocused } from 'expo-router';
+import { C, S, R } from '../theme';
+import { getLocalDateKey, getShortDay, parseLocalDateKey, normalizeTimetable } from '../utils/dates';
+
+const TIMETABLE_KEY = '@TIMETABLE_v1';
+const PROGRESS_KEY = '@TASK_PROGRESS_v1';
+
+function getShortDayLocal(dateString) {
+  return getShortDay(parseLocalDateKey(dateString));
+}
+
+// Older task records don't have an explicit creation date, but their series IDs
+// were generated from Date.now(). Use that timestamp to avoid marking dates
+// before a task existed as missed.
+function getTaskCreatedDate(task) {
+  if (typeof task.createdDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(task.createdDate)) {
+    return task.createdDate;
+  }
+  const rawId = String(task.seriesId || task.id || '');
+  const timestampMatch = rawId.match(/^\d{13}(?:-|$)/);
+  if (!timestampMatch) return null;
+  const created = new Date(Number(timestampMatch[0].replace(/-$/, '')));
+  return Number.isNaN(created.getTime()) ? null : getLocalDateKey(created);
+}
+
+function taskExistedOnDate(task, dateString) {
+  const createdDate = getTaskCreatedDate(task);
+  return !createdDate || dateString >= createdDate;
+}
+
+function toMin(s) {
+  if (!s) return 0;
+  const [time, period] = s.trim().split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+export default function CalendarScreen() {
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDateKey());
+  const [visibleMonth, setVisibleMonth] = useState(() => getLocalDateKey().slice(0, 7));
+  const [timetable, setTimetable] = useState({});
+  const [dayTasks, setDayTasks] = useState([]);
+  const [progress, setProgress] = useState({});
+  const isFocused = useIsFocused();
+  const todayStr = getLocalDateKey();
+
+  useEffect(() => { if (isFocused) loadAll(); }, [isFocused]);
+
+  const loadAll = async () => {
+    try {
+      const [d1, d2] = await Promise.all([
+        AsyncStorage.getItem(TIMETABLE_KEY),
+        AsyncStorage.getItem(PROGRESS_KEY),
+      ]);
+      const parsedTimetable = d1 ? JSON.parse(d1) : {};
+      const parsedProgress = d2 ? JSON.parse(d2) : {};
+      const normalized = normalizeTimetable(parsedTimetable);
+      if (normalized.changed) await AsyncStorage.setItem(TIMETABLE_KEY, JSON.stringify(normalized.timetable));
+      setTimetable(normalized.timetable);
+      setProgress(parsedProgress && typeof parsedProgress === 'object' && !Array.isArray(parsedProgress) ? parsedProgress : {});
+    } catch (e) {
+      console.warn('Error loading data', e);
+      setTimetable({}); setProgress({});
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const shortDay = getShortDayLocal(selectedDate);
+    const base = (Array.isArray(timetable[shortDay]) ? timetable[shortDay] : []).filter((task) => {
+      const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+      if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, selectedDate);
+      if (task.scheduledDate) return task.scheduledDate === selectedDate;
+      // Preserve legacy tasks created before date-specific one-off dates were stored.
+      return true;
+    });
+    const daily = progress[selectedDate] || {};
+    const mergedById = new Map(base.map((task) => {
+      const p = daily[task.id] || (task.seriesId ? daily[task.seriesId] : null) || {};
+      return [task.id, { ...task, completed: !!p.completed, started: !!p.started }];
+    }));
+
+    // Retain historical tasks after they are removed from the current timetable.
+    // New progress records include a lightweight snapshot of the task.
+    Object.entries(daily).forEach(([progressId, record]) => {
+      const snapshot = record?.taskSnapshot;
+      // A snapshot alone is not evidence of activity: older versions could
+      // leave snapshots behind after a task was uncompleted. Only show removed
+      // tasks in history when they were actually started or completed.
+      if (!snapshot || (!record?.started && !record?.completed) || mergedById.has(snapshot.id || progressId)) return;
+      mergedById.set(snapshot.id || progressId, {
+        ...snapshot,
+        id: snapshot.id || progressId,
+        completed: !!record.completed,
+        started: !!record.started,
+        historicalOnly: true,
+      });
+    });
+    const merged = [...mergedById.values()];
+    merged.sort((a, b) => toMin(a.time) - toMin(b.time));
+    setDayTasks(merged);
+  }, [selectedDate, timetable, progress]);
+
+  const isPast = selectedDate < todayStr;
+  const isToday = selectedDate === todayStr;
+
+  // Rebuild calendar dots only when the month, timetable, or selected date changes.
+  const markedDates = useMemo(() => {
+    const marks = {};
+    const [visibleYear, visibleMonthNumber] = visibleMonth.split('-').map(Number);
+    const daysInVisibleMonth = new Date(visibleYear, visibleMonthNumber, 0).getDate();
+    for (let day = 1; day <= daysInVisibleMonth; day += 1) {
+      const dateKey = visibleMonth + '-' + String(day).padStart(2, '0');
+      const shortDay = getShortDayLocal(dateKey);
+      const tasksForDay = Array.isArray(timetable[shortDay]) ? timetable[shortDay] : [];
+      const hasTasks = tasksForDay.some((task) => {
+        const repeatDays = Array.isArray(task.repeatDays) ? task.repeatDays : [];
+        if (repeatDays.length > 0) return repeatDays.includes(shortDay) && taskExistedOnDate(task, dateKey);
+        if (task.scheduledDate) return task.scheduledDate === dateKey;
+        // Legacy tasks without a stored date retain their previous compatibility behavior.
+        return true;
+      });
+      if (hasTasks) marks[dateKey] = { marked: true, dotColor: C.primary };
+    }
+    marks[selectedDate] = {
+      ...(marks[selectedDate] || {}),
+      selected: true,
+      selectedColor: C.primary,
+    };
+    return marks;
+  }, [visibleMonth, timetable, selectedDate]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Header />
+
+      <Calendar
+        style={styles.calendar}
+        hideExtraDays={false}
+        onDayPress={(day) => setSelectedDate(day.dateString)}
+        onMonthChange={(month) => setVisibleMonth(month.year + '-' + String(month.month).padStart(2, '0'))}
+        markedDates={markedDates}
+        initialDate={selectedDate}
+        theme={{
+          selectedDayBackgroundColor: C.primary,
+          todayTextColor: C.primary,
+          todayBackgroundColor: C.primaryLight,
+          arrowColor: C.primary,
+          dotColor: C.primary,
+          textDayFontWeight: '500',
+          textDayFontSize: 16,
+          textDayHeaderFontSize: 12,
+          textMonthFontSize: 18,
+          textMonthFontWeight: '700',
+          'stylesheet.calendar.main': {
+            week: {
+              marginTop: 2,
+              marginBottom: 2,
+              flexDirection: 'row',
+              justifyContent: 'space-around',
+            },
+          },
+          calendarBackground: C.surface,
+          dayTextColor: C.text,
+          textDisabledColor: C.textHint,
+          monthTextColor: C.text,
+        }}
+      />
+
+      <View style={styles.content}>
+        <View style={styles.calendarActions}>
+          <Text style={styles.selectedDateTitle}>
+            {isToday ? "Today's tasks" : parseLocalDateKey(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </Text>
+          {!isToday && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Jump to today"
+              onPress={() => setSelectedDate(todayStr)}
+              style={({ pressed }) => [styles.todayButton, pressed && { opacity: 0.75 }]}
+            >
+              <Text style={styles.todayButtonText}>Today</Text>
+            </Pressable>
+          )}
+        </View>
+        {/* Full task details for the selected date */}
+        {dayTasks.length > 0 ? (
+          <FlatList
+            data={dayTasks}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: S.xl }}
+            initialNumToRender={6}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            renderItem={({ item }) => {
+              const statusColor = item.completed ? C.green
+                : item.started ? C.amber
+                : isPast ? C.red
+                : C.border2;
+              const statusLabel = item.completed ? 'Done'
+                : item.started ? 'In Progress'
+                : isPast ? 'Missed'
+                : 'Pending';
+              return (
+                <View style={styles.taskCard}>
+                  {/* Status strip */}
+                  <View style={[styles.taskStrip, { backgroundColor: statusColor }]} />
+                  <View style={styles.taskTime}>
+                    <Text style={styles.taskTimeText}>{item.time?.split(' ')[0]}</Text>
+                    <Text style={styles.taskTimePeriod}>{item.time?.split(' ')[1]}</Text>
+                  </View>
+                  <View style={styles.taskBody}>
+                    <Text
+                      style={[styles.taskTitle, item.completed && styles.taskTitleDone]}
+                      numberOfLines={1}
+                    >
+                      {item.title}
+                    </Text>
+                    {item.durationMinutes ? (
+                      <Text style={styles.taskDuration}>⏱ {item.durationMinutes} min</Text>
+                    ) : null}
+                    {Array.isArray(item.repeatDays) && item.repeatDays.length > 0 ? (
+                      <Text style={styles.taskRepeat} numberOfLines={1}>
+                        Repeats: {item.repeatDays.join(', ')}
+                      </Text>
+                    ) : item.historicalOnly ? (
+                      <Text style={styles.taskRepeat}>Past scheduled task</Text>
+                    ) : null}
+                  </View>
+                  <View style={[styles.statusPill, { backgroundColor: statusColor + '22' }]}>
+                    <Text style={[styles.statusPillText, { color: statusColor }]}>
+                      {statusLabel}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }}
+          />
+        ) : (
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>📅</Text>
+            <Text style={styles.emptyTitle}>No tasks this day</Text>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  calendar: { flexShrink: 0 },
+  content: { flex: 1, paddingHorizontal: S.lg, paddingTop: S.md },
+  calendarActions: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: S.sm },
+  selectedDateTitle: { fontSize: 17, fontWeight: '800', color: C.text },
+  todayButton: { backgroundColor: C.primaryLight, borderRadius: R.full, paddingHorizontal: S.md, paddingVertical: S.sm, marginLeft: S.sm },
+  todayButtonText: { fontSize: 12, fontWeight: '800', color: C.primary },
+  taskCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.surface,
+    borderRadius: R.lg,
+    marginBottom: S.sm,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: 'hidden',
+  },
+  taskStrip: {
+    width: 4,
+    alignSelf: 'stretch',
+  },
+  taskTime: {
+    width: 48,
+    alignItems: 'center',
+    paddingVertical: S.md,
+    paddingLeft: S.xs,
+  },
+  taskTimeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.primary,
+  },
+  taskTimePeriod: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: C.primaryMid,
+    letterSpacing: 0.3,
+  },
+  taskBody: {
+    flex: 1,
+    paddingVertical: S.md,
+    paddingHorizontal: S.md,
+  },
+  taskTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.text,
+    marginBottom: 2,
+  },
+  taskTitleDone: {
+    textDecorationLine: 'line-through',
+    color: C.textHint,
+  },
+  taskDuration: {
+    fontSize: 11,
+    color: C.textSub,
+  },
+  taskRepeat: {
+    fontSize: 10,
+    color: C.textHint,
+    marginTop: 3,
+  },
+  statusPill: {
+    marginRight: S.md,
+    paddingHorizontal: S.sm,
+    paddingVertical: 3,
+    borderRadius: R.full,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 24,
+  },
+  emptyIcon: { fontSize: 40, marginBottom: S.md },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.text,
+    marginBottom: S.xs,
+  },
+  emptyHint: { fontSize: 13, color: C.textSub },
+});
